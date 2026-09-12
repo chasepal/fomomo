@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>fomomo</title>
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* 结构 */
+    --spring:cubic-bezier(.34,1.46,.5,1); --smooth:cubic-bezier(.4,0,.2,1);
+    --sans:"General Sans",-apple-system,sans-serif; --disp:"Clash Display",var(--sans); --mono:"JetBrains Mono",ui-monospace,monospace;
+    --amber:#f0b90b; --peri:#7e8dff;
+    /* fomo 配色（截图取色）：纯黑 + 翡翠绿，跌红 */
+    --ink:#f2f4f6; --muted:#8b9296; --faint:#565c61;
+    --glass:rgba(11,12,14,.84); --hair:rgba(255,255,255,.08); --hair-2:rgba(255,255,255,.05); --menu:rgba(234,240,242,.72);
+    --accent:#24c47c; --accent-dim:#0f8a55; --accent-rgb:36,196,124; --accent2:#3ddc84; --accent2-rgb:61,220,132;
+    --up:#3ddc84; --down:#ff5b5b;
+    --bg-a:#0a0b0c; --bg-b:#000000;
+    --logo-ink:#04140c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{ font-family:var(--sans); background:var(--bg-b); color:var(--ink); overflow:hidden; -webkit-font-smoothing:antialiased;
+    transition:background .5s var(--smooth); }
+
+  .desktop{ position:fixed; inset:0; transition:background .5s var(--smooth);
+    background:
+      radial-gradient(90% 60% at 18% 12%, rgba(var(--accent-rgb),.15), transparent 55%),
+      radial-gradient(80% 70% at 88% 34%, rgba(var(--accent2-rgb),.13), transparent 50%),
+      linear-gradient(160deg, var(--bg-a) 0%, var(--bg-b) 60%); }
+  .desktop::after{ content:""; position:absolute; inset:0; opacity:.3; pointer-events:none; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); }
+  .glow{ position:fixed; top:200px; left:-60px; width:340px; height:420px; pointer-events:none; z-index:2;
+    background:radial-gradient(closest-side, rgba(var(--accent-rgb),.14), transparent 72%); transition:background .5s var(--smooth) }
+
+  .menubar{ position:fixed; top:0; left:0; right:0; height:30px; z-index:3; display:flex; align-items:center; justify-content:space-between;
+    padding:0 16px; font-size:12.5px; color:var(--menu); font-weight:500; }
+  .menubar .l{display:flex; gap:18px; align-items:center} .menubar .l b{font-weight:600; color:var(--ink)}
+  .menubar .r{display:flex; gap:14px; align-items:center; font-family:var(--mono); font-size:12px}
+  .menubar .dot-apple{width:13px;height:13px;border-radius:50%; background:conic-gradient(from 200deg,var(--accent),var(--accent2),var(--accent));opacity:.95}
+
+  .dock{ position:fixed; left:16px; top:46px; width:326px; z-index:20; }
+  .panel{ display:flex; flex-direction:column; max-height:calc(100vh - 78px); overflow:hidden;
+    background:var(--glass); backdrop-filter:blur(28px) saturate(140%); -webkit-backdrop-filter:blur(28px) saturate(140%);
+    border:1px solid var(--hair); border-radius:22px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 28px 64px -22px rgba(0,0,0,.85), 0 0 0 .5px rgba(0,0,0,.5);
+    animation:dockIn .7s var(--spring) both; position:relative; transition:background .5s var(--smooth) }
+  @keyframes dockIn{ from{opacity:0; transform:translateX(-42px) scale(.985)} to{opacity:1; transform:none} }
+  .panel.flash{ animation:flash 1s var(--smooth); }
+  @keyframes flash{ 0%{box-shadow:0 28px 64px -22px rgba(0,0,0,.85), 0 0 0 1px rgba(var(--accent-rgb),.5), 0 0 46px -6px rgba(var(--accent-rgb),.4)}
+    100%{box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 28px 64px -22px rgba(0,0,0,.85), 0 0 0 .5px rgba(0,0,0,.5)} }
+
+  .ph{ padding:13px 14px 11px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--hair-2); }
+  .ph-l{ display:flex; align-items:center; gap:10px }
+  .ph .badge{ width:30px;height:30px;border-radius:9px; display:grid;place-items:center; flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dim)); color:var(--logo-ink); font-family:var(--disp); font-weight:700; font-size:16px;
+    box-shadow:0 4px 12px -4px rgba(var(--accent-rgb),.5) }
+  .ph h1{ font-family:var(--disp); font-size:15px; font-weight:600; letter-spacing:.3px; line-height:1.1 }
+  .ph p{ font-size:10.5px; color:var(--muted); margin-top:2px; display:flex; align-items:center; gap:5px }
+  .ph .pulse{ width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.8s var(--smooth) infinite }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),.5)} 70%{box-shadow:0 0 0 6px rgba(var(--accent-rgb),0)} 100%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),0)} }
+  .ph b.n{ color:var(--accent); font-family:var(--mono); font-weight:600 }
+  .eq{ display:flex; align-items:flex-end; gap:2.5px; height:14px }
+  .eq i{ width:2.5px; border-radius:2px; background:linear-gradient(var(--accent),var(--accent-dim)); transform-origin:bottom; animation:eq 1.1s ease-in-out infinite alternate; }
+  .eq i:nth-child(1){height:55%; animation-delay:0s} .eq i:nth-child(2){height:100%; animation-delay:.18s}
+  .eq i:nth-child(3){height:42%; animation-delay:.36s} .eq i:nth-child(4){height:78%; animation-delay:.24s}
+  @keyframes eq{ from{transform:scaleY(.3)} to{transform:scaleY(1)} }
+
+  .cols{ display:flex; align-items:center; padding:7px 14px 6px; font-size:9px; letter-spacing:.6px; text-transform:uppercase;
+    color:var(--faint); font-weight:600; border-bottom:1px solid var(--hair-2); }
+  .cols .c-name{ flex:1 } .cols .c-k{ width:58px; text-align:center } .cols .c-mc{ width:74px; text-align:right }
+  .list{ overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:3px; }
+  .list::-webkit-scrollbar{ width:5px } .list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.1); border-radius:3px }
+
+  .row{ display:flex; align-items:center; gap:9px; padding:8px 8px; border-radius:12px; cursor:pointer; border:1px solid transparent; transition:.18s var(--smooth); }
+  .row:hover{ background:rgba(255,255,255,.04); border-color:var(--hair) }
+  .row.fresh{ animation:rowIn .6s var(--spring) both }
+  @keyframes rowIn{ from{opacity:0; transform:translateX(-16px)} to{opacity:1; transform:none} }
+  .row.hot{ border-color:rgba(var(--accent-rgb),.4); background:rgba(var(--accent-rgb),.06); box-shadow:0 0 0 1px rgba(var(--accent-rgb),.18) inset }
+  .r-logo{ width:30px;height:30px;border-radius:9px; flex-shrink:0; display:grid;place-items:center;
+    font-family:var(--disp); font-weight:700; font-size:13px; color:var(--logo-ink); box-shadow:0 0 0 1px rgba(255,255,255,.08) inset }
+  .r-info{ flex:1; min-width:0 }
+  .r-l1{ display:flex; align-items:center; gap:6px } .r-l1 b{ font-family:var(--disp); font-weight:600; font-size:14px; letter-spacing:.2px }
+  .chain{ font-size:8.5px; font-weight:700; letter-spacing:.3px; padding:1.5px 5px; border-radius:5px }
+  .chain-bsc{ color:var(--amber); background:rgba(240,185,11,.13) } .chain-eth{ color:var(--peri); background:rgba(126,141,255,.13) }
+  .r-l2{ display:flex; align-items:center; gap:7px; margin-top:2px; font-size:10.5px; color:var(--muted); font-family:var(--mono) }
+  .r-l2 .kol{ color:var(--accent); display:inline-flex; align-items:center; gap:3px; font-weight:500 } .r-l2 .kol svg{ width:10px;height:10px }
+  .kline{ flex-shrink:0 }
+  .r-mc{ width:74px; text-align:right; flex-shrink:0 }
+  .r-mc .mc{ font-family:var(--mono); font-size:12.5px; font-weight:500 }
+  .r-mc .chg{ font-family:var(--mono); font-size:10px; font-weight:500; margin-top:1px }
+  .chg.up{ color:var(--up) } .chg.down{ color:var(--down) }
+
+  .pf{ padding:9px 14px; border-top:1px solid var(--hair-2); display:flex; align-items:center; justify-content:space-between; font-size:10.5px; color:var(--faint); font-family:var(--mono) } .pf .dot{ color:var(--accent) }
+
+  .popup{ position:fixed; left:352px; top:96px; width:300px; z-index:30; opacity:0; pointer-events:none;
+    transform:translateX(-24px) scale(.94); transition:opacity .34s var(--smooth), transform .5s var(--spring); }
+  .popup.show{ opacity:1; pointer-events:auto; transform:none; }
+  .pop-card{ background:var(--glass); backdrop-filter:blur(28px) saturate(140%); -webkit-backdrop-filter:blur(28px) saturate(140%);
+    border:1px solid rgba(var(--accent-rgb),.3); border-radius:20px; padding:14px; position:relative; overflow:hidden;
+    box-shadow:0 28px 70px -18px rgba(0,0,0,.9), 0 0 46px -8px rgba(var(--accent-rgb),.32) }
+  .pop-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:11px }
+  .pop-head .tag{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:700; color:var(--accent); letter-spacing:.5px; text-transform:uppercase }
+  .pop-head .ping{ position:relative; width:7px;height:7px } .pop-head .ping::before,.pop-head .ping::after{ content:""; position:absolute; inset:0; border-radius:50%; background:var(--accent) }
+  .pop-head .ping::after{ animation:ping 1.4s var(--smooth) infinite } @keyframes ping{ 0%{transform:scale(1);opacity:.7} 100%{transform:scale(3);opacity:0} }
+  .pclose{ width:22px;height:22px;border-radius:7px; border:1px solid var(--hair); background:rgba(255,255,255,.03); color:var(--muted); cursor:pointer; font-size:12px; line-height:1 } .pclose:hover{ color:var(--ink) }
+  .pop-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px }
+  .pop-top .tk{ display:flex; align-items:center; gap:10px; min-width:0 }
+  .pop-top .tk-logo{ width:38px;height:38px;border-radius:11px; display:grid;place-items:center; font-family:var(--disp); font-weight:700; font-size:16px; color:var(--logo-ink); box-shadow:0 0 0 1px rgba(255,255,255,.08) inset }
+  .pop-top .sym{ font-family:var(--disp); font-weight:600; font-size:16px; display:flex; align-items:center; gap:7px }
+  .pop-top .name{ font-size:11px; color:var(--muted); margin-top:1px }
+  .pop-top .price{ font-family:var(--mono); font-size:15px; font-weight:500; text-align:right }
+  .pop-top .chg{ font-size:11.5px; justify-content:flex-end; display:flex }
+  .pop-kline{ margin:2px 0 12px; height:52px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.02); border-radius:12px; padding:6px }
+  .pop-stats{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:12px }
+  .pstat{ display:flex; flex-direction:column; gap:2px } .pstat span{ font-size:9px; color:var(--faint); text-transform:uppercase; letter-spacing:.4px; font-weight:600 }
+  .pstat b{ font-family:var(--mono); font-size:12px; font-weight:500 } .pstat b.g{ color:var(--accent) }
+  .pop-bot{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:11px; border-top:1px solid var(--hair-2); margin-bottom:11px }
+  .sender{ display:flex; align-items:center; gap:7px; font-size:12px } .avatar{ width:21px;height:21px;border-radius:50%; display:grid;place-items:center; font-size:10px; font-weight:700; color:#fff }
+  .sender b{ font-weight:600; font-size:12px } .sender i{ color:var(--faint); font-style:normal; font-size:11px; font-family:var(--mono) }
+  .addr{ display:flex; align-items:center; gap:6px } .addr code{ font-family:var(--mono); font-size:11px; color:var(--muted) }
+  .mini{ width:22px;height:22px;border-radius:7px; border:1px solid var(--hair); background:rgba(255,255,255,.03); color:var(--muted); cursor:pointer; display:grid;place-items:center }
+  .mini:hover,.mini.copied{ color:var(--accent); border-color:rgba(var(--accent-rgb),.4) }
+  .pop-actions{ display:flex; gap:7px }
+  .pill{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; height:32px; border-radius:10px; border:1px solid var(--hair); background:rgba(255,255,255,.03); color:var(--muted); font-size:11.5px; font-weight:600; cursor:pointer; transition:.2s var(--smooth) }
+  .pill:hover{ color:var(--ink); background:rgba(255,255,255,.07) } .pill.accent:hover{ color:var(--accent); border-color:rgba(var(--accent-rgb),.35); background:rgba(var(--accent-rgb),.08) }
+  .pill svg{ width:13px;height:13px }
+  .pop-prog{ position:absolute; left:0; right:0; bottom:0; height:2.5px } .pop-prog i{ display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-dim)); width:100% }
+  .pop-prog i.run{ animation:prog 4.6s linear forwards } @keyframes prog{ from{width:100%} to{width:0%} }
+
+  .controls{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:40; display:flex; align-items:center; gap:9px;
+    padding:8px 8px 8px 14px; border-radius:16px; background:rgba(12,14,18,.82); backdrop-filter:blur(20px); border:1px solid var(--hair); box-shadow:0 20px 50px -20px rgba(0,0,0,.9) }
+  .controls .lab{ font-size:10px; font-weight:700; letter-spacing:1.2px; color:var(--faint); text-transform:uppercase; font-family:var(--mono) }
+  .themes{ display:flex; gap:6px }
+  .themes button{ width:20px;height:20px;border-radius:50%; padding:0; cursor:pointer; background:var(--sw); border:2px solid transparent; transition:.2s var(--smooth); box-shadow:0 0 0 1px rgba(0,0,0,.3) }
+  .themes button:hover{ transform:scale(1.12) } .themes button.on{ border-color:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.4), 0 0 12px -2px var(--sw) }
+  .sep{ width:1px; height:20px; background:var(--hair) }
+  .controls .act{ font-family:var(--sans); font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:11px; border:1px solid var(--hair); background:rgba(255,255,255,.03); color:var(--muted); cursor:pointer; transition:.2s var(--smooth) }
+  .controls .act:hover{ color:var(--ink); background:rgba(255,255,255,.08) }
+  .controls .fire{ color:var(--logo-ink); background:var(--accent); border-color:transparent } .controls .fire:hover{ filter:brightness(1.08) }
+</style>
+</head>
+<body>
+  <div class="desktop"></div>
+  <div class="glow"></div>
+  <div class="menubar">
+    <div class="l"><span class="dot-apple"></span><b>fomomo</b><span>文件</span><span>视图</span></div>
+    <div class="r"><span>◍ 42%</span><span id="clock">21:36</span></div>
+  </div>
+
+  <div class="dock">
+    <div class="panel" id="panel">
+      <div class="ph">
+        <div class="ph-l">
+          <div class="badge">f</div>
+          <div><h1>fomomo</h1><p><span class="pulse"></span>监听 Alpha 冲锋群 · <b class="n" id="count">5</b> 代币</p></div>
+        </div>
+        <div class="eq"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="cols"><span class="c-name">代币 / KOL · 均价</span><span class="c-k">K线</span><span class="c-mc">MC</span></div>
+      <div class="list" id="list"></div>
+      <div class="pf"><span><span class="dot">●</span> 已连接</span><span id="lastUp">更新于 21:36</span></div>
+    </div>
+  </div>
+
+  <div class="popup" id="popup"></div>
+
+  <div class="controls">
+    <span class="lab">原型</span>
+    <button class="act fire" id="fire">＋ 模拟新代币</button>
+    <button class="act" id="reset">重置</button>
+  </div>
+
+<script>
+  const AV = { "老王":["#19f0a0","#0b8f63"], "小美":["#7e8dff","#4a5cff"], "阿豪":["#ff9f45","#ff6a3d"], "Kevin":["#ff5673","#c93a54"], "Young":["#4fd1ff","#2b8fe0"], "David":["#c792ff","#8b5cf6"] };
+  const BASE = [
+    { sym:"PONKE", name:"Ponke on BSC", addr:"0xdce5c6317222c5b6e5d963eeac010dfc4da9e6da", chain:"bsc", price:"$0.00042", mc:"$1.24M", liq:"$318K", chg:42.3, kol:5, avg:"$0.00031", sender:"老王", ago:"刚刚", trend:1 },
+    { sym:"MOODENG", name:"Moo Deng", addr:"0xca9c78dd337a67f6e0077f65f5e9218719d30edf", chain:"bsc", price:"$0.0118", mc:"$8.7M", liq:"$1.1M", chg:128.5, kol:12, avg:"$0.0074", sender:"小美", ago:"2分钟", trend:1 },
+    { sym:"RETARDIO", name:"Retardio", addr:"0xe4f874ff22e4f013a873f38c124e06cfc04f3901", chain:"eth", price:"$0.0009", mc:"$640K", liq:"$95K", chg:-18.2, kol:3, avg:"$0.0012", sender:"阿豪", ago:"5分钟", trend:-1 },
+    { sym:"WOJAK", name:"Wojak Finance", addr:"0x09eec9cf5dce57e44056177b7e67211b51d869b4", chain:"bsc", price:"$0.0273", mc:"$3.1M", liq:"$540K", chg:7.8, kol:7, avg:"$0.0209", sender:"Kevin", ago:"9分钟", trend:1 },
+    { sym:"TURBO", name:"Turbo Toad", addr:"0x79e1b7e59054fd4e18ad7c71e5781162bf28888b", chain:"eth", price:"$0.0051", mc:"$12.4M", liq:"$2.3M", chg:-4.1, kol:9, avg:"$0.0061", sender:"Young", ago:"14分钟", trend:-1 },
+  ];
+  const NEW_POOL = [
+    { sym:"GIGA", name:"Gigachad", chain:"bsc", price:"$0.0067", mc:"$2.8M", liq:"$410K", chg:64.2, kol:4, avg:"$0.0051", sender:"David", ago:"刚刚", trend:1, addr:"0xbfe8b1eb29be154c4a250e401d2996b37d44a36e" },
+    { sym:"NEIRO", name:"Neiro CTO", chain:"eth", price:"$0.0203", mc:"$15.1M", liq:"$3.4M", chg:22.9, kol:8, avg:"$0.0170", sender:"老王", ago:"刚刚", trend:1, addr:"0x6560a864e6ac8e5f325c7cd5fb57640cdb2719bf" },
+    { sym:"BRETT", name:"Brett", chain:"bsc", price:"$0.089", mc:"$44M", liq:"$6.2M", chg:-9.4, kol:6, avg:"$0.097", sender:"小美", ago:"刚刚", trend:-1, addr:"0xe6e509e8bdb30be38f5cd3813b375e3780365e7c" },
+  ];
+
+  const LOGO_HUE = 152; // fomo 翡翠绿系
+  let tokens = BASE.slice();
+  const short = a => a.slice(0,6)+"…"+a.slice(-4);
+  const initial = s => s[0].toUpperCase();
+  const KOLICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  function logoGrad(sym){ let h=0; for(const c of sym) h=(h*31+c.charCodeAt(0)); const a=LOGO_HUE + ((h%60)-30); return `background:linear-gradient(135deg,hsl(${a} 85% 62%),hsl(${a+34} 80% 44%))`; }
+
+  function kline(trend,w=58,h=26){
+    const n = w < 120 ? 18 : 46, pad = 2.5; let y = h*0.55, pts = [];
+    for(let i=0;i<n;i++){ y += (Math.random()-.5)*4.2 - trend*1.15; y = Math.max(pad, Math.min(h-pad, y)); pts.push([ (i/(n-1))*w, y ]); }
+    const col = trend>0 ? "var(--up)" : "var(--down)", id = "k"+Math.random().toString(36).slice(2,7);
+    const line = pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+    return `<svg class="kline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".26"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+      <path d="${line} L ${w} ${h} L 0 ${h} Z" fill="url(#${id})"/>
+      <path d="${line}" stroke="${col}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function row(t,i,{fresh=false,hot=false}={}){
+    const up=t.chg>=0, cls="row"+(fresh?" fresh":"")+(hot?" hot":"");
+    return `<div class="${cls}" data-i="${i}">
+      <div class="r-logo" style="${logoGrad(t.sym)}">${initial(t.sym)}</div>
+      <div class="r-info">
+        <div class="r-l1"><b>${t.sym}</b><span class="chain chain-${t.chain}">${t.chain.toUpperCase()}</span></div>
+        <div class="r-l2"><span class="kol">${KOLICON}${t.kol}</span>· 均 ${t.avg}</div>
+      </div>
+      ${kline(t.trend)}
+      <div class="r-mc"><div class="mc">${t.mc}</div><div class="chg ${up?"up":"down"}">${up?"▲":"▼"}${Math.abs(t.chg)}%</div></div>
+    </div>`;
+  }
+
+  const list=document.getElementById("list"), panel=document.getElementById("panel"), popup=document.getElementById("popup");
+  function render(freshTop=false){
+    list.innerHTML = tokens.map((t,i)=>row(t,i,{fresh:freshTop&&i===0,hot:freshTop&&i===0})).join("");
+    document.getElementById("count").textContent = tokens.length;
+    if(freshTop) setTimeout(()=> list.firstElementChild?.classList.remove("hot"), 2200);
+  }
+
+  let popTimer;
+  function showPopup(t,{auto=false}={}){
+    const up=t.chg>=0, av=AV[t.sender]||["#19f0a0","#0b8f63"];
+    popup.innerHTML = `<div class="pop-card">
+      <div class="pop-head"><span class="tag"><span class="ping"></span>${auto?"新代币入场":"代币详情"}</span><button class="pclose" onclick="hidePopup()">✕</button></div>
+      <div class="pop-top">
+        <div class="tk"><div class="tk-logo" style="${logoGrad(t.sym)}">${initial(t.sym)}</div>
+          <div><div class="sym">${t.sym} <span class="chain chain-${t.chain}">${t.chain.toUpperCase()}</span></div><div class="name">${t.name}</div></div></div>
+        <div><div class="price">${t.price}</div><div class="chg ${up?"up":"down"}">${up?"▲":"▼"} ${Math.abs(t.chg)}%</div></div>
+      </div>
+      <div class="pop-kline">${kline(t.trend, 268, 44)}</div>
+      <div class="pop-stats">
+        <div class="pstat"><span>MC</span><b>${t.mc}</b></div>
+        <div class="pstat"><span>流动性</span><b>${t.liq}</b></div>
+        <div class="pstat"><span>KOL</span><b class="g">${t.kol} 人</b></div>
+        <div class="pstat"><span>均价</span><b>${t.avg}</b></div>
+      </div>
+      <div class="pop-bot">
+        <div class="sender"><span class="avatar" style="background:linear-gradient(135deg,${av[0]},${av[1]})">${initial(t.sender)}</span><b>${t.sender}</b><i>· ${t.ago}</i></div>
+        <div class="addr"><code>${short(t.addr)}</code><button class="mini" onclick="copyAddr(this,'${t.addr}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+      </div>
+      <div class="pop-actions">
+        <button class="pill" onclick="copyAddr(this,'${t.addr}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制</button>
+        <button class="pill accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M12 3v18"/></svg>GMGN</button>
+        <button class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg>DEX</button>
+      </div>
+      <div class="pop-prog"><i class="${auto?"run":""}"></i></div>
+    </div>`;
+    requestAnimationFrame(()=> popup.classList.add("show"));
+    clearTimeout(popTimer);
+    if(auto) popTimer = setTimeout(hidePopup, 4600);
+  }
+  window.hidePopup = ()=> popup.classList.remove("show");
+  window.copyAddr = (el,addr)=>{ navigator.clipboard?.writeText(addr);
+    if(el.classList.contains("mini")){ el.classList.add("copied"); setTimeout(()=>el.classList.remove("copied"),1200);} else { const t=el.innerHTML; el.innerHTML="已复制"; setTimeout(()=>el.innerHTML=t,1200);} };
+
+  list.addEventListener("click", e=>{ const r=e.target.closest(".row"); if(!r) return; showPopup(tokens[+r.dataset.i],{auto:false}); });
+
+  render();
+  let pool=0;
+  document.getElementById("fire").onclick = ()=>{
+    const t = NEW_POOL[pool++ % NEW_POOL.length]; tokens.unshift(t);
+    render(true); list.scrollTop=0;
+    panel.classList.remove("flash"); void panel.offsetWidth; panel.classList.add("flash");
+    showPopup(t,{auto:true});
+    const d=new Date(); document.getElementById("lastUp").textContent="更新于 "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  };
+  document.getElementById("reset").onclick = ()=>{ tokens=BASE.slice(); pool=0; render(); hidePopup(); };
+
+  const clk=document.getElementById("clock");
+  setInterval(()=>{ const d=new Date(); clk.textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); },1000);
+</script>
+</body>
+</html>
