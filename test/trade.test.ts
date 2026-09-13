@@ -4,7 +4,7 @@ import type { NativePrices } from "../src/core/native-price.js";
 import { NATIVE_TOKEN, OkxError, type OkxClient, type QuoteRequest, type RouteInfo, type SwapRequest, type SwapResult, type TokenInfo } from "../src/core/okx.js";
 import { Store } from "../src/core/store.js";
 import { MIN_USD, TradeService, fromRaw, toRaw } from "../src/core/trade.js";
-import { DEFAULT_SETTINGS, type OutEvent, type TradeEvent, type TradeQuoteEvent, type TradeSettings } from "../src/core/types.js";
+import { DEFAULT_SETTINGS, type OutEvent, type TradeEvent, type TradeQuoteEvent, type TradeSettings, type TradeStateEvent } from "../src/core/types.js";
 import type { BurnerWallet, EvmReceipt } from "../src/core/wallet.js";
 
 /**
@@ -110,7 +110,7 @@ async function until(pred: () => boolean, ms = 2000): Promise<void> {
   }
 }
 
-function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) => void, nativePrice: number | null = BNB_USD) {
+function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) => void, nativePrice: number | null = BNB_USD, opts: { wallet?: boolean; createError?: string } = {}) {
   const store = new Store(":memory:");
   seed?.(store);
   const settings: TradeSettings = { ...DEFAULT_SETTINGS.trade, ...overrides };
@@ -119,12 +119,22 @@ function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) =
   const wallet = new FakeWallet();
   /** 假原生币价缓存：所有符号同一个价；测试可拨 value / 手动触发 onChange */
   const prices: NativePrices & { value: number | null } = { value: nativePrice, get: () => prices.value, onChange: null };
+  /** 假 Keychain 状态：`wallet: false` 起步时没钱包；createWallet 生成一次后 load 就有 */
+  let hasWallet = opts.wallet ?? true;
+  let created = 0;
   const svc = new TradeService({
     store,
     bridge: { emit: (e) => events.push(e) },
     settings: () => settings,
     okx: () => okx as unknown as OkxClient,
-    wallet: async () => wallet as unknown as BurnerWallet,
+    wallet: async () => (hasWallet ? (wallet as unknown as BurnerWallet) : null),
+    createWallet: async () => {
+      if (opts.createError) throw new Error(opts.createError);
+      if (hasWallet) throw new Error("burner wallet already exists; refusing to overwrite");
+      hasWallet = true;
+      created++;
+      return wallet as unknown as BurnerWallet;
+    },
     priceOf: (a, chain) => (a === MEME && chain === "bsc" ? 0.001 : null),
     meta: (a) => (a === MEME ? { symbol: "MEME", name: "Meme Coin", logo: null } : null),
     nativePrices: prices,
@@ -133,7 +143,8 @@ function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) =
   const trades = () => events.filter((e): e is TradeEvent => e.t === "trade");
   const statuses = (id: string) => trades().filter((e) => e.id === id).map((e) => e.status);
   const quotes = () => events.filter((e): e is TradeQuoteEvent => e.t === "trade_quote");
-  return { store, settings, events, okx, wallet, prices, svc, trades, statuses, quotes };
+  const states = () => events.filter((e): e is TradeStateEvent => e.t === "trade_state");
+  return { store, settings, events, okx, wallet, prices, svc, trades, statuses, quotes, states, created: () => created };
 }
 
 // ① 报价只问一次、不学价：买入按 BNB 数量直接问 OKX（每次 1 次）；估值 / 余额 USD 来自原生币价缓存；缓存变了重推 trade_state。事件字段可读
@@ -504,6 +515,44 @@ function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) =
   assert.equal(h.okx.swaps.length, 2);
   h.svc.close();
   console.log("ok no native price: quote ok with null usd/fee, buy refused, sell unaffected, buy allowed once price is back");
+}
+
+// ⑮ 没钱包：启动不 ready、无地址、reason 不指向命令行；「生成热钱包」→ 生成一次后 ready 带地址并推 trade_state 拉余额；再点不覆盖；已有钱包连 create 都不碰。生成失败 → reason 带原因、仍不 ready
+{
+  const h = harness({}, undefined, BNB_USD, { wallet: false });
+  await h.svc.start();
+  let st = h.svc.state();
+  assert.equal(st.ready, false);
+  assert.equal(st.evmAddress, null);
+  assert.doesNotMatch(st.reason ?? "", /pnpm|cli/, "reason 是给按钮配的文案，不指向终端");
+  const before = h.states().length;
+  await h.svc.initWallet();
+  assert.equal(h.created(), 1);
+  st = h.svc.state();
+  assert.equal(st.ready, true);
+  assert.equal(st.reason, null);
+  assert.equal(st.evmAddress, ME);
+  assert.equal(st.balances.bsc.native, 0.05, "生成后立刻拉了余额");
+  assert.ok(h.states().length > before, "生成后推了 trade_state");
+  await h.svc.initWallet();
+  assert.equal(h.created(), 1, "已有钱包再点：不再生成");
+  h.svc.close();
+
+  const h2 = harness();
+  await h2.svc.start();
+  await h2.svc.initWallet();
+  assert.equal(h2.created(), 0, "启动就有钱包：create 不被调用（覆盖 = 丢钱）");
+  assert.equal(h2.svc.state().evmAddress, ME);
+  h2.svc.close();
+
+  const h3 = harness({}, undefined, BNB_USD, { wallet: false, createError: "keychain locked" });
+  await h3.svc.start();
+  await h3.svc.initWallet();
+  st = h3.svc.state();
+  assert.equal(st.ready, false);
+  assert.match(st.reason ?? "", /keychain locked/, "失败原因随 trade_state 给到 UI");
+  h3.svc.close();
+  console.log("ok wallet init: create once → ready with address, never overwrite, failure surfaces in reason");
 }
 
 console.log("trade: ok");
