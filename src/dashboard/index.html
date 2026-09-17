@@ -253,6 +253,93 @@
   .rk .n{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
   .rk .v{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
   .ranks .empty{color:var(--faint);font-size:12px;padding:8px 0}
+  /* 复盘：特征对照表 + 逐币时间线（点行展开） */
+  .ft td.lab{text-align:left;max-width:260px}
+  .ft .bar2{display:inline-block;height:6px;border-radius:3px;background:var(--accent);vertical-align:middle;margin-right:6px}
+  .ft tr.weak td{color:var(--faint)}
+  .fgrp{font-size:10px;font-weight:600;letter-spacing:.04em;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.08);color:var(--muted)}
+  .fgrp.process{background:rgba(240,185,11,.15);color:var(--amber)}
+  tr.rv{cursor:pointer} tr.rv:hover td{background:rgba(255,255,255,.03)}
+  tr.rvd td{padding:0 0 14px;border-bottom:1px solid var(--hair2)}
+  .tl{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:10px 14px 0;font-size:12px}
+  .tl h4{font-size:11.5px;color:var(--muted);font-weight:600;margin:0 0 6px}
+  .tl ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  .tl li{display:grid;grid-template-columns:52px 74px 1fr;gap:8px;align-items:baseline;line-height:1.45}
+  .tl li .t{color:var(--faint);font-variant-numeric:tabular-nums;text-align:right}
+  .tl li .k{color:var(--muted);white-space:nowrap}
+  .tl li .b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tl li.rise{color:var(--accent2);font-weight:600}
+  .tl .meta{grid-column:1/-1;color:var(--faint);line-height:1.6}
+  .tl .meta b{color:var(--ink);font-weight:500}
+  .caveats{color:var(--faint);font-size:11.5px;line-height:1.6;padding-left:16px;margin:0}
+  /* 复盘 → 模拟交易：左 = 计算面板（宽），右 = 编辑器栏；窄屏时编辑器折到下面 */
+  #sim{max-width:1500px}
+  .sim{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;align-items:start}
+  @media (max-width:1100px){.sim{grid-template-columns:1fr}.sim-side{order:2}}
+  .sim h4{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 8px}
+  .g-over{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+  @media (max-width:1300px){.g-over{grid-template-columns:1fr}}
+  #s-over{height:280px}
+  #s-over .ov .ln{fill:none;stroke:var(--up);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;transition:stroke-width .12s}
+  #s-over .ov .buy{fill:var(--up)} #s-over .ov .sell{fill:var(--amber)}
+  #s-over .ov:hover{opacity:1 !important} #s-over .ov:hover .ln{stroke-width:3;stroke:var(--accent2)}
+  #s-over:hover .ov:not(:hover){opacity:.18 !important}
+  #s-over .ov .hit{fill:none;stroke:transparent;stroke-width:8;pointer-events:stroke}
+  #s-over .lab{fill:var(--ink);font-size:12px;font-weight:600}
+  .recs{display:grid;grid-template-rows:auto minmax(0,1fr) auto minmax(0,1fr);max-height:440px}
+  .recs .scroll{overflow:auto;min-height:0;border-bottom:1px solid var(--hair2);margin-bottom:12px}
+  .recs .scroll:last-child{border-bottom:0;margin-bottom:0}
+  .recs table th{height:26px;position:sticky;top:0;background:var(--glass);padding:0 5px;font-size:10px;letter-spacing:0}
+  .recs table td{height:28px;font-size:11px;font-weight:400;padding:0 5px}
+  .recs td.sym{max-width:80px;overflow:hidden;text-overflow:ellipsis}
+  .recs .exit{font-size:10px;padding:1px 4px}
+  .recs .empty{padding:8px 0;color:var(--faint);font-size:12px}
+  .hold{max-height:480px;overflow:auto}
+  .hold th{position:sticky;top:0;background:var(--glass);z-index:1}
+  #sopen td.when{max-width:130px}
+  details.fold summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+  details.fold summary::-webkit-details-marker{display:none}
+  details.fold summary::before{content:"";width:0;height:0;border:4px solid transparent;border-left:5px solid var(--faint);transition:transform .15s}
+  details.fold[open] summary::before{transform:rotate(90deg) translateX(1px)}
+  details.fold summary h2{margin:0}
+  details.fold[open] summary{margin-bottom:14px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips .grp2{flex-basis:100%;font-size:10.5px;color:var(--faint);margin-top:6px}
+  .chip{cursor:pointer;border:1px solid var(--hair);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);background:transparent;transition:border-color .12s,color .12s,background .12s;display:inline-flex;align-items:center;gap:4px}
+  .chip:hover{color:var(--ink)}
+  .chip.on{border-color:var(--accent);color:var(--ink);background:rgba(61,220,132,.12)}
+  .chip:disabled{opacity:.4;cursor:default}
+  .chip .n{color:var(--faint);font-variant-numeric:tabular-nums}
+  .sim-env{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;align-items:end;margin-top:12px}
+  .sim-env label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted)}
+  .sim-env input{width:100%}
+  .sim-env .act{grid-column:1/-1}
+  .sim-env .status{grid-column:1/-1;margin-left:0}
+  .sim-env select{width:100%;height:32px;background:var(--raise);color:var(--ink);border:1px solid var(--hair2);border-radius:8px;padding:0 8px;font-size:13px}
+  .tpl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  #s-code{width:100%;min-height:300px;resize:vertical;background:var(--raise);color:var(--ink);border:1px solid var(--hair2);border-radius:8px;padding:10px 12px;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;tab-size:2;white-space:pre;overflow:auto}
+  #s-code:focus{outline:none;border-color:var(--accent)}
+  #s-code.err{border-color:var(--down)}
+  .s-err{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(255,92,92,.1);color:var(--down);font-size:12px;white-space:pre-wrap}
+  .s-log{margin-top:8px;max-height:160px;overflow:auto;background:var(--raise);border:1px solid var(--hair);border-radius:8px;padding:8px 10px;font:11.5px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);white-space:pre-wrap}
+  details.api{margin-top:10px;font-size:12px;color:var(--muted)}
+  details.api summary{cursor:pointer;color:var(--ink);font-weight:600;font-size:12px}
+  details.api table{margin-top:6px;font-size:11.5px}
+  details.api td{padding:3px 8px 3px 0;vertical-align:top;text-align:left;border:0}
+  details.api code{color:var(--accent2);font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+  #sdays td.day{text-align:left;font-variant-numeric:tabular-nums}
+  #sdays td.best{white-space:nowrap}
+  #sdays tr.holdout td{background:rgba(255,255,255,.025)}
+  #sdays tr.holdout td.day::after{content:"验证";margin-left:6px;font-size:10px;color:var(--amber);font-weight:600}
+  #sdays tr.sum td{border-top:1px solid var(--hair2);font-weight:600}
+  #sdays .bar{display:inline-block;height:6px;border-radius:3px;vertical-align:middle;margin-left:6px}
+  #simout .grid{margin-bottom:14px}
+  #simout .card.kpi{background:var(--raise)}
+  .exit{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.08);color:var(--ink)}
+  .exit.now{color:var(--accent)} .exit.open{color:var(--faint)} .exit.gap{text-decoration:underline dotted}
+  .exit.c0{color:var(--down)} .exit.c1{color:var(--accent2)} .exit.c2{color:var(--amber)} .exit.c3{color:#7fb3ff} .exit.c4{color:#e08cff} .exit.c5{color:#ffa07a}
+  .fills{font-size:11px;color:var(--muted);white-space:nowrap}
+  .fills b{color:var(--ink);font-weight:500}
 </style>
 </head>
 <body>
@@ -266,6 +353,8 @@
     <button data-tab="tokens"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9h4.5a2 2 0 0 1 0 4H9zM9 13h5a2 2 0 0 1 0 4H9zM11 7v2M11 17v2"/></svg>代币</button>
     <button data-tab="trade"><svg viewBox="0 0 24 24"><path d="M7 17l4-8 4 5 5-9"/><path d="M3 21h18"/><path d="M17 5h3v3"/></svg>交易</button>
     <button data-tab="battle"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M6 20V10M11 20V4M16 20v-8M21 20v-5"/></svg>24h 战况</button>
+    <button data-tab="review"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6M11 8v6"/></svg>复盘</button>
+    <button data-tab="sim"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-5 4 3 4-6 4 4"/><circle cx="8" cy="10" r="1.2"/><circle cx="16" cy="7" r="1.2"/></svg>模拟交易</button>
   </nav>
   <div class="grp">设置</div>
   <nav>
@@ -386,6 +475,7 @@
           <label>买入快捷额 (BNB)</label><div><input id="tp-buy-BNB" type="text" placeholder="0.007,0.035,0.07,0.35" /><div class="k-sub">1–6 个，逗号分隔，原生币数量</div></div>
           <label>买入快捷额 (SOL)</label><div><input id="tp-buy-SOL" type="text" placeholder="0.05,0.25,0.5,2.5" /><div class="k-sub">1–6 个，逗号分隔，原生币数量</div></div>
           <label>买入快捷额 (MON)</label><div><input id="tp-buy-MON" type="text" placeholder="200,1000,2000,10000" /><div class="k-sub">1–6 个，逗号分隔，原生币数量</div></div>
+          <label>买入快捷额 (USDC)</label><div><input id="tp-buy-USDC" type="text" placeholder="5,25,50,250" /><div class="k-sub">1–6 个，逗号分隔，Arc 的原生币是 USDC</div></div>
           <label>卖出快捷比例 (%)</label><div><input id="tp-sell" type="text" placeholder="25,50,100" /><div class="k-sub">1–6 个整数 1–100</div></div>
         </div>
         <div class="hint" style="margin-top:12px">报价与路由经 fomomo 的 OKX 接口，本机没有对应设置</div>
@@ -467,6 +557,143 @@
     </div>
   </section>
 
+  <section id="review">
+    <div class="page-h">
+      <div><h1>复盘</h1><p>首喊在窗口内的币，按<b>首喊后 24h 峰倍</b>分「达标 / 未达标」，比较三类特征（群 · 推特 · 买入人）在两组的出现率。特征只用首喊后 30s「决策截面」里的信息；首喊之后才发生的归「过程」。这是关联，不是因果。</p></div>
+      <div class="row">
+        <div class="seg" id="rhours"><button data-h="24">24h</button><button data-h="72" class="on">3d</button><button data-h="168">7d</button><button data-h="720">30d</button></div>
+        <div class="seg" id="rwin"><button data-w="2" class="on">≥2×</button><button data-w="3">≥3×</button><button data-w="5">≥5×</button></div>
+        <button class="ghost" id="rcopy" type="button" title="把这份报告（特征对照 + 逐币时间线）以 Markdown 复制到剪贴板，方便贴给别人或别的模型讨论">复制 Markdown</button>
+        <span class="status" id="rcopy-stat"></span>
+      </div>
+    </div>
+    <div class="grid g4">
+      <div class="card kpi"><div class="lab">合格 / 全部</div><div class="val" id="r-n">—</div><div class="sub" id="r-n-sub">—</div></div>
+      <div class="card kpi"><div class="lab">达标率</div><div class="val" id="r-rate">—</div><div class="sub" id="r-rate-sub">—</div></div>
+      <div class="card kpi"><div class="lab">有决策截面</div><div class="val" id="r-cut">—</div><div class="sub" id="r-cut-sub">首喊后 30s 定格的行情 / 推特 / 前排</div></div>
+      <div class="card kpi"><div class="lab">最强关联</div><div class="val" id="r-top">—</div><div class="sub" id="r-top-sub">—</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h2>按链</h2><div id="r-chains" class="ranks"></div></div>
+      <div class="card"><h2>按首喊群</h2><div id="r-groups" class="ranks"></div></div>
+    </div>
+    <div class="card lst">
+      <div class="chart-h">
+        <h2>特征对照</h2>
+        <div class="seg" id="rfg"><button data-g="all" class="on">全部</button><button data-g="group">群</button><button data-g="twitter">推特</button><button data-g="buyers">买入人</button><button data-g="process">过程</button></div>
+        <span class="hint" style="margin:0 0 0 12px">lift = 有该特征的达标率 ÷ 没有的达标率；两组任一 n &lt; 20 只报计数（灰）</span>
+        <button class="ghost" type="button" style="margin-left:auto" onclick="showTab('sim')">拿这些特征去写策略 →</button>
+      </div>
+      <table class="ft" id="rft"><thead><tr><th style="text-align:left">特征</th><th>组</th><th>有：n</th><th>有：达标率</th><th>无：n</th><th>无：达标率</th><th>lift</th><th>缺失</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card lst">
+      <div class="chart-h">
+        <h2>逐币</h2>
+        <div class="seg" id="rst"><button data-s="all" class="on">全部<span class="cnt" id="r-cnt-all"></span></button><button data-s="hit">达标<span class="cnt" id="r-cnt-hit"></span></button><button data-s="miss">未达标<span class="cnt" id="r-cnt-miss"></span></button><button data-s="other">进行中 / 排除<span class="cnt" id="r-cnt-other"></span></button></div>
+        <span class="hint" style="margin:0 0 0 auto">点行展开时间线：起点之前 = 可能的原因，之后 = 过程</span>
+      </div>
+      <table id="rtable"><thead><tr><th>首喊</th><th>群 / 首喊人</th><th>代币</th><th>基准</th><th>峰倍 24h</th><th>现倍</th><th>起点</th><th>截面</th><th>命中特征</th><th>状态</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card"><h2>注意</h2><ul class="caveats" id="r-caveats"></ul></div>
+  </section>
+
+  <section id="sim">
+    <div class="page-h">
+      <div><h1>模拟交易</h1><p>策略是一段 JS：<code>entry(t)</code> 决定买不买、买多少，<code>step(s)</code> 每 20s 采样调一次决定卖不卖。币在决策截面后 ≥20s 的第一个采样价假想买入；没卖完的尾仓按现价估值。同一个 step、不挑币的「全部合格币」作基准。不下真单、不进账本、不碰热钱包。</p></div>
+      <div class="row">
+        <div class="seg" id="shours"><button data-h="24">24h</button><button data-h="72" class="on">3d</button><button data-h="168">7d</button><button data-h="720">30d</button></div>
+      </div>
+    </div>
+    <div class="sim">
+      <div class="sim-main" id="simout" hidden>
+        <div class="grid g-over">
+          <div class="card">
+            <div class="chart-h"><h2>盈利叠加</h2><span class="hint" style="margin:0 0 0 auto" id="s-over-hint"></span></div>
+            <svg id="s-over" class="svgc" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
+            <div class="hint">只画净盈亏 &gt; 0 的交易：横轴 = 买入后时间，纵轴 = 相对买入价的倍数（对数）；● 买入、▲ 卖出腿；线越亮赚得越多，悬停看 symbol · 盈亏</div>
+          </div>
+          <div class="card lst recs">
+            <h4>购买记录</h4>
+            <div class="scroll"><table id="s-buys"><thead><tr><th>时间</th><th>代币</th><th>买入市值</th><th>等了 · 相对首喊</th><th>投入</th></tr></thead><tbody></tbody></table></div>
+            <h4>卖出记录</h4>
+            <div class="scroll"><table id="s-sells"><thead><tr><th>时间</th><th>代币</th><th>倍数</th><th>比例</th><th>原因</th><th>到手</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="card lst">
+          <div class="chart-h"><h2>持仓</h2><span class="hint" style="margin:0 0 0 auto" id="s-open-hint"></span></div>
+          <div class="hold"><table id="sopen"><thead><tr><th>代币</th><th>买入</th><th>投入</th><th>剩余仓位</th><th>现倍</th><th>期间最高</th><th>已实现</th><th>未实现</th><th>合计盈亏</th><th>状态</th></tr></thead><tbody></tbody></table></div>
+          <div class="hint">还没卖完的尾仓，按现价估值、按合计盈亏排。持有至今 = 满了 24h 还没卖完；持仓中 = 还没满 24h、还在采样；带 * = 现价不可用按最后采样；下划虚线 = 采样中途断了（掉出面板），中间发生了什么不知道</div>
+        </div>
+        <div class="grid g4">
+          <div class="card kpi"><div class="lab">交易 · 持仓中</div><div class="val" id="s-n">—</div><div class="sub" id="s-n-sub">—</div></div>
+          <div class="card kpi"><div class="lab">净盈亏 · 收益率</div><div class="val" id="s-pnl">—</div><div class="sub" id="s-pnl-sub">—</div><div class="sub" id="s-pnl-split">—</div></div>
+          <div class="card kpi"><div class="lab">胜率 · 中位每单</div><div class="val" id="s-win">—</div><div class="sub" id="s-win-sub">—</div></div>
+          <div class="card kpi"><div class="lab">最好 · 最差</div><div class="val" id="s-best">—</div><div class="sub" id="s-best-sub">—</div></div>
+        </div>
+        <div class="card" id="s-split-card" hidden>
+          <div class="chart-h"><h2>调参段 vs 验证段</h2><span class="hint" style="margin:0 0 0 auto" id="s-split-hint"></span></div>
+          <table id="ssplit"><thead><tr><th style="text-align:left">段</th><th>天</th><th>交易</th><th>投入</th><th>胜率</th><th>净盈亏</th><th>收益率</th><th>去掉每天最好一笔</th><th>盈利天</th><th>基准净</th></tr></thead><tbody></tbody></table>
+          <div class="hint">按入场日切：前面的日子是你反复改策略时看的，验证段的日子只看不调。策略在调参段赚、验证段亏，就是拟合了那几天的运气</div>
+        </div>
+        <div class="grid g31">
+          <div class="card">
+            <div class="chart-h"><h2>累计净盈亏（按入场时间）</h2><span class="hint" style="margin:0 0 0 auto" id="s-curve-hint"></span></div>
+            <svg id="s-curve" class="svgc" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="card"><h2>退出原因</h2><div id="s-reasons" class="ranks"></div><div class="hint">标签 = 策略里 sell / sellAll 的 tag（卖完时取最后一腿）；持有至今 / 持仓中 = 尾仓按现价估值</div></div>
+        </div>
+        <div class="card lst">
+          <div class="chart-h"><h2>按日</h2><span class="hint" style="margin:0 0 0 auto" id="s-days-hint"></span></div>
+          <table id="sdays"><thead><tr><th>入场日</th><th>交易</th><th>投入</th><th>胜率</th><th>已实现</th><th>未实现</th><th>净盈亏</th><th>去掉最好一笔</th><th>最好一笔</th><th>基准净</th></tr></thead><tbody></tbody></table>
+          <div class="hint">按入场日（本机时区）分组；「去掉最好一笔」= 这天净盈亏减去当天最赚的那一笔——一天的账是不是一个币撑起来的。持有至今的尾仓算在入场那天，早入场的尾仓多跑了几天，跨日比未实现要留心</div>
+        </div>
+        <details class="card lst fold">
+          <summary><h2>逐笔</h2><span class="hint" style="margin:0 0 0 auto">全部成交，按净盈亏排序</span></summary>
+          <table id="strades"><thead><tr><th>买入（等了多久 · 相对首喊价）</th><th>代币</th><th>买入市值</th><th>投入</th><th>成交</th><th>退出 / 估值</th><th>持有</th><th>最后倍数</th><th>期间最高</th><th>已实现</th><th>未实现</th><th>净盈亏</th></tr></thead><tbody></tbody></table>
+        </details>
+        <div class="card"><h2>注意</h2><ul class="caveats"><li>语言越自由越容易把这几天拟合出一条漂亮曲线；看验证段、看「去掉最好一笔」、看 n。</li><li>成交按 20s 采样价、不计冲击（小池子里 $100 也会推价）；跳空时按观测到的那一价成交。</li><li>价格路径剔了两类坏点：供应量口径跳变、同名大币的错报价（一步跳 ≥20× 又回落）——不设止损时一段假报价就能把尾仓「赚」出几万。</li><li>入场只能用决策截面看到的信息；带截面的币从装上这一版起才开始积累，推特 / 买入人类 chip 前几天多为 0。</li><li>策略跑在 sidecar 的 worker 线程里，15s 超时；不是安全沙箱，别粘贴不认识的人写的策略。</li></ul></div>
+      </div>
+      <div class="sim-side card lst">
+        <div class="tpl" id="s-tpl"></div>
+        <textarea id="s-code" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        <div class="s-err" id="s-err" hidden></div>
+        <div class="s-log" id="s-log" hidden></div>
+        <div class="sim-env">
+          <label>单边成本 %<input id="s-fee" type="number" step="0.5" min="0" max="20" value="1" /></label>
+          <label>默认每单 $<input id="s-stake" type="number" step="10" min="1" value="100" /></label>
+          <label>验证段（最后 N 天）<select id="s-holdout"><option value="0">不切</option><option value="1">最后 1 天</option><option value="2" selected>最后 2 天</option><option value="3">最后 3 天</option><option value="7">最后 7 天</option></select></label>
+          <label>&nbsp;<span class="dim" style="font-size:11px;line-height:1.4">前面的日子调策略，验证段只看不调；两段都正才算数</span></label>
+          <button class="act" id="s-run" type="button">运行模拟 <span class="dim" style="font-weight:400">⌘↵</span></button>
+          <span class="status" id="s-stat"></span>
+        </div>
+        <details class="api">
+          <summary>step(s) / entry(t) 能看到什么</summary>
+          <table>
+            <tr><td><code>s.x</code> <code>s.mc</code> <code>s.liq</code></td><td>当前采样 ÷ 入场价的倍数、当前市值、当前流动性 USD（没给 = null）</td></tr>
+            <tr><td><code>s.peakX</code> <code>s.dd</code></td><td>入场后最高倍数、从最高点回撤比例（0–1）</td></tr>
+            <tr><td><code>s.held</code> <code>s.windowLeft</code> <code>s.ts</code></td><td>入场后秒数、离 24h 窗末还剩几秒（「拿满就卖」写 <code>windowLeft &lt;= 60</code>）、当前采样时刻</td></tr>
+            <tr><td><code>s.holding</code> <code>s.buy(usd, tag)</code></td><td>有没有仓位；watch 模式下按当前采样价买入（默认每单），每个币只能买一次。买之前 <code>s.x</code> 等相对首喊价，买入后相对买入价</td></tr>
+            <tr><td><code>s.callX</code> <code>s.callPeakX</code> <code>s.callMinX</code> <code>s.sinceCall</code></td><td>始终相对首喊价：当前倍数 / 首喊后最高 / 首喊后最低 / 首喊后秒数——「看 15 分钟再决定」用这几个</td></tr>
+            <tr><td><code>s.remaining</code> <code>s.fills</code> <code>s.sold(x)</code></td><td>剩余原始仓位比例（没买 = 0）、成交记录 [{x, pct, ts, mc, tag}]、有没有 ≥x 倍的成交</td></tr>
+            <tr><td><code>s.sell(pct, tag)</code> <code>s.sellAll(tag)</code></td><td>按当前价卖原始仓位的 pct（0–1）；tag 是退出原因标签，页面按它分组</td></tr>
+            <tr><td><code>s.state</code> <code>s.token</code></td><td>这个币私有的空对象，跨 step 保留（记「已经出本」之类）；<code>s.token</code> = entry 看到的同一个 <code>t</code>（watch 模式在 step 里再查卡片 / 官推）</td></tr>
+            <tr><td><code>s.groups</code> <code>s.callers</code> <code>s.events.calls</code></td><td>到现在为止喊过这个币的群数 / 人数（含首喊）；逐条 [{ts, grp, sender}]</td></tr>
+            <tr><td><code>s.events.tweets</code> <code>s.events.gmgn</code> <code>s.events.fomo</code></td><td>推文 [{ts, kind, actor, followers, kol}]、GMGN 喊单 [{ts, actor, followers, kol}]、fomo 关注者 [{ts, kind: buy|sell|thesis, handle, usd}]——都只到当前采样为止</td></tr>
+            <tr><td><code>t.mc</code> <code>t.liq</code> <code>t.chain</code> <code>t.symbol</code></td><td>入场市值 / 流动性 / 链 / 代号</td></tr>
+            <tr><td><code>t.ageSec</code> <code>t.openSec</code></td><td>首喊 − 代币创建（秒）；首喊 − 迁出 / 开盘（秒），负 = 还在内盘。不知道 = null</td></tr>
+            <tr><td><code>t.card</code></td><td>群里机器人在首喊后几秒回的卡片（近 12 天 2/3 的喊单有）：<code>holders</code> 持有人 · <code>volume</code> 成交量 · <code>mc</code> · <code>groups</code> 已有几个群在聊（<code>firstCall</code> = 我们是 16 个群里第一个）· <code>sinceX</code> 机器人侦测后已涨几倍（追高）；没有卡片 = null</td></tr>
+            <tr><td><code>t.prior</code></td><td>首喊人先验 {n, hit, rate}：这个人（同群）之前已完结的首喊里 ≥2× 的比例；没历史 = null</td></tr>
+            <tr><td><code>t.firstGroup</code> <code>t.firstSender</code> <code>t.text</code></td><td>首喊的群 / 人 / 消息文本</td></tr>
+            <tr><td><code>t.twitter</code></td><td>官推 {has, joined, isTweet, tweetAgeSec, followers}：有没有链接、账号注册时刻（不随拉升变）· <code>isTweet</code> 链接指向一条推文（/status/）而不是账号主页 · <code>tweetAgeSec</code> 首喊 − 被链接推文发出时刻 · <code>followers</code> 粉丝数；不知道 = null</td></tr>
+            <tr><td><code>t.features</code> <code>t.cut</code></td><td>喊单那一刻为真的特征 id（Set；id 见复盘页特征表）· 决策截面原始字段（09-14 起才有）</td></tr>
+            <tr><td><code>entry(t)</code> 返回</td><td>数字 = 立刻买这么多美元；<code>0</code> / <code>null</code> / <code>false</code> = 不买；不返回 = 默认每单立刻买；<code>"watch"</code> = 先看着，之后在 step 里 <code>s.buy()</code> 再买（到窗末没买 = 放弃，计「观察未买」）。不写 entry = 全部合格币立刻买</td></tr>
+            <tr><td>看不到</td><td>之后的采样、现价、入场后才知道的「过程」特征——按 API 形状保证不偷看未来。<code>Math.random</code> / <code>eval</code> 禁用；<code>console.log</code> 输出在下面（最多 200 行）</td></tr>
+          </table>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <section id="settings">
     <div class="page-h"><div><h1>设置</h1><p>改动即时生效：宽高在失焦 / 回车时应用，不透明度拖动时实时应用</p></div></div>
     <div class="form">
@@ -496,7 +723,7 @@ const x = (v) => v == null || !isFinite(v) ? "—" : v.toFixed(2) + "×";
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 // 前 24h 没数据（刚开始跑）时只给一个 pill，别再补一句"前 24h 为 0"把副文案挤成两行
 const delta = (cur, prev) => prev === 0 ? (cur > 0 ? `<span class="chg up">新增 ${cur}</span>` : `<span>暂无</span>`) : `${pct((cur/prev - 1) * 100, "chg ")}<span>较前 24h（${prev}）</span>`;
-const CHAIN_SHORT = { robinhood: "RH", bsc: "BSC", sol: "SOL", eth: "ETH", base: "BASE", monad: "MON" };
+const CHAIN_SHORT = { robinhood: "RH", bsc: "BSC", sol: "SOL", eth: "ETH", base: "BASE", monad: "MON", arc: "ARC" };
 const chainTag = (c) => `<span class="chain">${esc(CHAIN_SHORT[(c || "").toLowerCase()] || (c || "?").toUpperCase().slice(0, 4))}</span>`;
 const logo = (url, sym) => url ? `<img class="logo" src="${esc(url)}" />` : `<div class="logo">${esc((sym || "?").slice(0, 2))}</div>`;
 const gmgn = (chain, addr) => `https://gmgn.ai/${esc(chain || "robinhood")}/token/${esc(addr)}`;
@@ -504,13 +731,13 @@ const gmgn = (chain, addr) => `https://gmgn.ai/${esc(chain || "robinhood")}/toke
 const segOn = (sel, b) => document.querySelectorAll(sel).forEach((z) => z.classList.toggle("on", z === b));
 
 // ---- 导航（原生壳里没有工具栏了，侧栏就是导航；showTab 保留给 Swift 调） ----
-const TITLES = { overview: "总览", groups: "群组", stats: "喊单人", tokens: "代币", trade: "交易", battle: "24h 战况", settings: "设置" };
+const TITLES = { overview: "总览", groups: "群组", stats: "喊单人", tokens: "代币", trade: "交易", battle: "24h 战况", review: "复盘", sim: "模拟交易", settings: "设置" };
 window.showTab = (id) => {
   document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id));
   document.querySelectorAll(".content section").forEach((s) => s.classList.toggle("on", s.id === id));
   $("#crumb").textContent = TITLES[id] || id;
   $("#q").value = ""; applySearch();
-  if (id === "overview") loadOverview(); if (id === "groups") ensureGroups(); if (id === "stats") loadStats(); if (id === "tokens") loadTokens(); if (id === "trade") loadTrade(); if (id === "battle") loadBattle(); if (id === "settings") loadSettings();
+  if (id === "overview") loadOverview(); if (id === "groups") ensureGroups(); if (id === "stats") loadStats(); if (id === "tokens") loadTokens(); if (id === "trade") loadTrade(); if (id === "battle") loadBattle(); if (id === "review") loadReview(); if (id === "sim") loadSim(); if (id === "settings") loadSettings();
 };
 document.querySelectorAll("nav button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 if (new URLSearchParams(location.search).has("native")) document.body.classList.add("native");
@@ -867,9 +1094,10 @@ async function loadTokens() {
 }
 
 // ---- 交易：本地 burner + OKX DEX。状态/余额/持仓/最近交易来自 /api/trade；设置走 PUT /api/settings {trade} ----
-const TRADE_CHAINS = ["eth", "bsc", "base", "monad", "robinhood", "sol"];
-const CHAIN_NAME = { eth: "Ethereum", bsc: "BNB Chain", base: "Base", monad: "Monad", robinhood: "Robinhood", sol: "Solana" };
-const TX_URL = { eth: "https://etherscan.io/tx/", bsc: "https://bscscan.com/tx/", base: "https://basescan.org/tx/", monad: "https://monadscan.com/tx/", robinhood: "https://robinhoodchain.blockscout.com/tx/", sol: "https://solscan.io/tx/" };
+const TRADE_CHAINS = ["eth", "bsc", "base", "monad", "robinhood", "arc", "sol"];
+const CHAIN_NAME = { eth: "Ethereum", bsc: "BNB Chain", base: "Base", monad: "Monad", robinhood: "Robinhood", arc: "Arc", sol: "Solana" };
+const TX_URL = { eth: "https://etherscan.io/tx/", bsc: "https://bscscan.com/tx/", base: "https://basescan.org/tx/", monad: "https://monadscan.com/tx/", robinhood: "https://robinhoodchain.blockscout.com/tx/", arc: "https://arc-scan.io/tx/", sol: "https://solscan.io/tx/" };
+const NATIVE_SYMBOLS = ["ETH", "BNB", "SOL", "MON", "USDC"];
 const short = (s) => !s ? "—" : s.length <= 14 ? s : s.slice(0, 6) + "…" + s.slice(-4);
 const usd = (v, d = 2) => v == null || !isFinite(v) ? "—" : "$" + v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 // 数量：大数保留 2 位，小数按有效数字给 4 位
@@ -931,7 +1159,7 @@ function renderTrade() {
 function renderTradeForm() {
   const t = settings.trade;
   $("#tp-max").value = t.maxUsdPerTrade; $("#tp-day").value = t.maxUsdPerDay;
-  for (const sym of ["ETH", "BNB", "SOL", "MON"]) $(`#tp-buy-${sym}`).value = (t.presets.buy[sym] || []).join(",");
+  for (const sym of NATIVE_SYMBOLS) $(`#tp-buy-${sym}`).value = (t.presets.buy[sym] || []).join(",");
   $("#tp-sell").value = t.presets.sell.join(",");
   const box = $("#trpc");
   if (!box.children.length) for (const c of TRADE_CHAINS) { const inp = el("input"); inp.type = "text"; inp.id = "tp-rpc-" + c; inp.placeholder = "默认公共节点"; const w = el("div"); w.append(inp); box.append(el("label", null, CHAIN_NAME[c]), w); }
@@ -944,7 +1172,7 @@ $("#tsave").onclick = async () => {
   const rpc = {}; for (const c of TRADE_CHAINS) { const v = $("#tp-rpc-" + c).value.trim(); if (v) rpc[c] = v; }
   const body = { trade: {
     maxUsdPerTrade: Number($("#tp-max").value), maxUsdPerDay: Number($("#tp-day").value),
-    presets: { buy: { ETH: nums($("#tp-buy-ETH").value), BNB: nums($("#tp-buy-BNB").value), SOL: nums($("#tp-buy-SOL").value), MON: nums($("#tp-buy-MON").value) }, sell: nums($("#tp-sell").value) },
+    presets: { buy: Object.fromEntries(NATIVE_SYMBOLS.map((sym) => [sym, nums($(`#tp-buy-${sym}`).value)])), sell: nums($("#tp-sell").value) },
     rpc,
   } };
   try {
@@ -1071,14 +1299,18 @@ function renderRanks(sel, groups, label, s, all) {
     <div class="v dim" title="胜率 ${(g.wins / g.n * 100).toFixed(0)}% · 中位现倍 ${x(median(g.xs))}">${(g.wins / g.n * 100).toFixed(0)}% 胜</div>
   </div>`).join("") || `<div class="empty">${all.length ? "没有已定价的喊单" : "窗口内没有喊单"}</div>`;
 }
-/** 累计盈亏：按喊单时间排序，每单 (nowX−1)×stake 累加；SVG 折线 + 面积 + 零线 + 时间刻度 */
+/** 累计盈亏：按喊单时间排序，每单 (nowX−1)×stake 累加 */
 function renderCurve(rows, s) {
-  const svg = $("#b-curve");
-  const W = 800, H = 220, L = 46, R = 12, T = 12, B = 26;
   const pts = [...rows].sort((a, b) => a.ts - b.ts);
-  if (pts.length < 1) { svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle">没有已定价的喊单</text>`; return; }
+  const last = drawCumCurve($("#b-curve"), pts, (c) => (c.nowX - 1) * s, (c, cum) => `${fmtTime(c.ts)} ${c.symbol || c.address.slice(0, 8)} ${x(c.nowX)} → 累计 ${money(cum)}`, "没有已定价的喊单", s);
+  if (last !== null) $("#b-curve-hint").textContent = `按喊单时间顺序 · 每单 $${s} · 按现价结算 · 终值 ${money(last)}`;
+}
+/** 通用累计曲线：pts 已按时间排好，pnlOf 给每点增量；SVG 折线 + 面积 + 零线 + 时间刻度。返回终值（空 → null） */
+function drawCumCurve(svg, pts, pnlOf, titleOf, emptyText, s) {
+  const W = 800, H = 220, L = 46, R = 12, T = 12, B = 26;
+  if (pts.length < 1) { svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle">${esc(emptyText)}</text>`; return null; }
   let acc = 0;
-  const ys = [0, ...pts.map((c) => (acc += (c.nowX - 1) * s))];
+  const ys = [0, ...pts.map((c) => (acc += pnlOf(c)))];
   const lo = Math.min(...ys), hi = Math.max(...ys);
   const span = Math.max(hi - lo, s * 0.5);
   const yOf = (v) => T + (H - T - B) * (1 - (v - lo) / span);
@@ -1090,9 +1322,9 @@ function renderCurve(rows, s) {
   const zero = lo <= 0 && hi >= 0 ? `<line class="zero" x1="${L}" x2="${W - R}" y1="${yOf(0)}" y2="${yOf(0)}"/>` : "";
   const tl = pts.map((c, i) => [i + 1, c.ts]).filter(([i]) => i === 1 || i === pts.length || i % Math.max(1, Math.round(pts.length / 6)) === 0)
     .map(([i, ts]) => `<text x="${xOf(i)}" y="${H - 8}" text-anchor="${i === pts.length ? "end" : i === 1 ? "start" : "middle"}">${fmtTime(ts).slice(6)}</text>`).join("");
-  const dots = pts.map((c, i) => `<circle class="pt" cx="${xOf(i + 1)}" cy="${yOf(ys[i + 1])}" r="2.5" style="stroke:${col}"><title>${esc(fmtTime(c.ts))} ${esc(c.symbol || c.address.slice(0, 8))} ${x(c.nowX)} → 累计 ${money(ys[i + 1])}</title></circle>`).join("");
+  const dots = pts.map((c, i) => `<circle class="pt" cx="${xOf(i + 1)}" cy="${yOf(ys[i + 1])}" r="2.5" style="stroke:${col}"><title>${esc(titleOf(c, ys[i + 1]))}</title></circle>`).join("");
   svg.innerHTML = `${ticks}${zero}<path class="area" d="${path} L${xOf(pts.length)},${yOf(Math.max(lo, Math.min(hi, 0)))} L${xOf(0)},${yOf(Math.max(lo, Math.min(hi, 0)))} Z" fill="${col}"/><path class="line" d="${path}" stroke="${col}"/>${dots}${tl}`;
-  $("#b-curve-hint").textContent = `按喊单时间顺序 · 每单 $${s} · 按现价结算 · 终值 ${money(last)}`;
+  return last;
 }
 /** 现倍分桶直方图 */
 function renderHist(rows) {
@@ -1222,6 +1454,512 @@ document.querySelectorAll("#bmode button").forEach((b) => b.onclick = () => { bM
 document.querySelectorAll("#bgold button").forEach((b) => b.onclick = () => { bGold = Number(b.dataset.x); segOn("#bgold button", b); renderBattle(); });
 $("#bstake").oninput = () => renderBattle();
 setInterval(() => { if ($("#battle").classList.contains("on")) loadBattle(); }, 60_000);
+
+// ---- 复盘：/api/analysis 一份报告（analysis.ts 算好），这里只渲染 + 本地筛选 ----
+let rv = null, rHours = 72, rWin = 2, rFg = "all", rSt = "all";
+const FG_LABEL = { group: "群", twitter: "推特", buyers: "买入人", process: "过程" };
+const EK_LABEL = { group_call: "群喊单", official_tweet: "官推", community_tweet: "社区推", gmgn_call: "GMGN 喊单", fomo_buy: "fomo 买", fomo_sell: "fomo 卖", fomo_thesis: "Thesis" };
+const ST_LABEL = { ok: "", incomplete: "进行中", no_base: "无基准", no_samples: "无采样", low_coverage: "采样不足", chain_conflict: "链冲突" };
+const rate = (s) => s.rate == null ? `<span class="dim">—</span>` : `${(s.rate * 100).toFixed(0)}%${s.ci ? ` <span class="dim">[${(s.ci[0] * 100).toFixed(0)}–${(s.ci[1] * 100).toFixed(0)}]</span>` : ""}`;
+const relMin = (ts, from) => { const d = Math.round((ts - from) / 60); return d === 0 ? "0m" : d > 0 ? `+${d}m` : `${d}m`; };
+async function loadReview() {
+  rv = await api(`/api/analysis?hours=${rHours}&win=${rWin}`);
+  renderReview();
+}
+function renderReview() {
+  if (!rv) return;
+  const r = rv.report, c = r.cohort, gname = (g) => rv.groups[g] || g;
+  const ex = c.excluded;
+  $("#r-n").textContent = `${c.eligible} / ${c.total}`;
+  $("#r-n-sub").textContent = `进行中 ${ex.incomplete} · 无基准 ${ex.no_base} · 采样不足 ${ex.low_coverage + ex.no_samples}${ex.chain_conflict ? ` · 链冲突 ${ex.chain_conflict}` : ""}`;
+  $("#r-rate").innerHTML = c.rate == null ? "—" : `${(c.rate * 100).toFixed(0)}<small>%</small>`;
+  $("#r-rate-sub").textContent = c.ci ? `${c.hit} 个峰倍 ≥${r.win}× · Wilson95 [${(c.ci[0] * 100).toFixed(0)}–${(c.ci[1] * 100).toFixed(0)}%]` : "—";
+  $("#r-cut").textContent = c.eligible ? `${c.withCut} / ${c.eligible}` : "—";
+  const best = r.features.find((f) => f.rankable && f.lift != null && f.group !== "process");
+  $("#r-top").textContent = best ? `${best.lift.toFixed(2)}×` : "—";
+  $("#r-top-sub").textContent = best ? `${best.label}：${(best.with.rate * 100).toFixed(0)}% vs ${(best.without.rate * 100).toFixed(0)}%（n ${best.with.n} / ${best.without.n}）` : "还没有两组都 ≥20 的非过程特征";
+  const ranks = (sel, stats, label) => {
+    const rows = Object.entries(stats);
+    const max = Math.max(1, ...rows.map(([, s]) => s.n));
+    $(sel).innerHTML = rows.slice(0, 8).map(([k, s]) => `<div class="rk">
+      <div class="nm"><span>${esc(label(k))}</span><div class="tr" style="--c:var(--accent)"><i style="width:${s.n / max * 100}%"></i></div></div>
+      <div class="n">${s.n}</div><div class="v">${s.rate == null ? "—" : (s.rate * 100).toFixed(0) + "%"}</div><div class="n">${s.hit} 达标</div>
+    </div>`).join("") || `<div class="empty">没有合格的币</div>`;
+  };
+  ranks("#r-chains", c.byChain, (k) => k);
+  ranks("#r-groups", c.byGroup, gname);
+  const fs = r.features.filter((f) => rFg === "all" || f.group === rFg);
+  const liftMax = Math.max(1, ...fs.filter((f) => f.rankable && f.lift != null).map((f) => f.lift));
+  $("#rft tbody").innerHTML = fs.map((f) => `<tr class="${f.rankable ? "" : "weak"}">
+      <td class="lab">${esc(f.label)}</td><td><span class="fgrp ${f.group}">${FG_LABEL[f.group]}</span></td>
+      <td class="mono">${f.with.n}</td><td>${rate(f.with)}</td><td class="mono">${f.without.n}</td><td>${rate(f.without)}</td>
+      <td class="${f.rankable ? (f.lift == null ? (f.with.rate > 0 ? "up" : "dim") : f.lift >= 1 ? "up" : "down") : "dim"}">${f.rankable ? (f.lift != null ? `<i class="bar2" style="width:${Math.min(60, f.lift / liftMax * 60)}px"></i>${f.lift.toFixed(2)}` : f.with.rate > 0 ? "∞" : "—") : "样本不足"}</td>
+      <td class="mono dim">${f.missing}</td>
+    </tr>`).join("");
+  const toks = r.tokens;
+  const bucketOf = (t) => t.status === "ok" ? (t.hit ? "hit" : "miss") : "other";
+  $("#r-cnt-all").textContent = toks.length;
+  $("#r-cnt-hit").textContent = toks.filter((t) => bucketOf(t) === "hit").length;
+  $("#r-cnt-miss").textContent = toks.filter((t) => bucketOf(t) === "miss").length;
+  $("#r-cnt-other").textContent = toks.filter((t) => bucketOf(t) === "other").length;
+  const labelOf = Object.fromEntries(r.features.map((f) => [f.id, f.label]));
+  $("#rtable tbody").innerHTML = toks.filter((t) => rSt === "all" || bucketOf(t) === rSt).map((t, i) => {
+    const st = t.status === "ok" ? (t.hit ? ["达标", "ok"] : ["未达标", ""]) : [ST_LABEL[t.status] || t.status, "dim"];
+    const feats = t.features.filter((id) => !id.startsWith("p_"));
+    return `<tr class="rv" data-i="${i}">
+      <td class="when">${esc(fmtTime(t.t0))}</td>
+      <td style="text-align:left"><span class="dim">${esc(gname(t.firstGroup))}</span> · ${esc(t.firstSender)}</td>
+      <td style="text-align:left">${tokLink({ chain: t.chain, address: t.address, logo: t.logo, symbol: t.symbol })}</td>
+      <td class="mono">${compact(t.base)}${t.approx ? ` <span class="pill" title="喊单价是回灌近似值">≈</span>` : ""}</td>
+      <td class="${t.peakX24 == null ? "dim" : t.peakX24 >= r.win ? "up" : ""}">${x(t.peakX24)}${t.sustained ? `<span class="pill ${t.sustained[180] ? "ok" : ""}" title="观测持续翻倍（≥2× 的连续实时采样跨度 ≥180s）">${t.sustained[180] ? "持续" : "瞬时"}</span>` : ""}</td>
+      <td class="${t.nowX == null ? "dim" : t.nowX >= 1 ? "up" : "down"}">${x(t.nowX)}</td>
+      <td class="mono">${t.tRise == null ? "—" : relMin(t.tRise, t.from)}</td>
+      <td>${t.hasCut ? `<span class="pill ok">+${t.from - t.t0}s</span>` : `<span class="dim">无</span>`}</td>
+      <td style="text-align:left;max-width:280px;white-space:normal">${feats.length ? feats.slice(0, 4).map((id) => `<span class="pill" title="${esc(labelOf[id] || id)}">${esc((labelOf[id] || id).replace(/（.*?）/g, ""))}</span>`).join(" ") + (feats.length > 4 ? ` <span class="dim">+${feats.length - 4}</span>` : "") : `<span class="dim">—</span>`}</td>
+      <td><span class="pill ${st[1]}">${st[0]}</span></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="10" class="dim" style="text-align:center">窗口内没有这类币</td></tr>`;
+  applySearch();
+}
+/** 点行展开 / 收起该币的时间线（同一时刻只展开一行） */
+$("#rtable").onclick = (e) => {
+  const tr = e.target.closest("tr.rv");
+  if (!tr || e.target.closest("a")) return;
+  const open = tr.nextElementSibling?.classList.contains("rvd");
+  document.querySelectorAll("#rtable tr.rvd").forEach((d) => d.remove());
+  if (open) return;
+  const shown = rv.report.tokens.filter((t) => rSt === "all" || (t.status === "ok" ? (t.hit ? "hit" : "miss") : "other") === rSt);
+  const t = shown[Number(tr.dataset.i)];
+  const li = (ev) => `<li${t.tRise != null && ev.ts <= t.tRise && ev.ts >= t.tRise - 3600 ? ' class="rise"' : ""}><span class="t">${relMin(ev.ts, t.from)}</span><span class="k">${EK_LABEL[ev.kind]}</span><span class="b" title="${esc(ev.text || "")}">${esc(ev.actor)}${ev.kol ? " <span class='pill'>KOL</span>" : ""}${ev.followers ? ` <span class="dim">${ev.followers}粉</span>` : ""}${ev.usd ? ` <span class="dim">$${Math.round(ev.usd)}</span>` : ""}${ev.text ? `：${esc(ev.text.replace(/\s+/g, " ").slice(0, 90))}` : ""}</span></li>`;
+  const before = t.events.filter((ev) => ev.phase === "before"), after = t.events.filter((ev) => ev.phase === "after");
+  const lead = t.leading && t.leading[3600] ? Object.entries(t.leading[3600]).filter(([, n]) => n).map(([k, n]) => `${EK_LABEL[k]} ${n}`).join("，") : "";
+  const d = document.createElement("tr");
+  d.className = "rvd";
+  d.innerHTML = `<td colspan="10"><div class="tl">
+    <div class="meta">首喊 <b>${esc(fmtTime(t.t0))}</b> · 基准 <b>${compact(t.base)}</b>${t.hasCut ? ` · 决策截面 <b>+${t.from - t.t0}s</b>` : " · 无截面（回灌首喊或部署前的币）"} · 24h 内采样 <b>${t.samples}</b>${t.dropped ? `（剔除 ${t.dropped} 个换算口径跳变点）` : ""}${t.tRise != null ? ` · 首次 ≥1.5× 于 <b>${relMin(t.tRise, t.from)}</b>` : " · 24h 内未到 1.5×"}${t.peakAt != null ? ` · 峰值于 <b>${relMin(t.peakAt, t.from)}</b>` : ""}${lead ? `<br>起点前 60min：<b>${esc(lead)}</b>（高亮行）` : ""}</div>
+    <div><h4>起点之前（可能的原因）</h4><ul>${before.slice(-30).map(li).join("") || '<li><span class="t"></span><span class="k dim">无</span><span></span></li>'}</ul></div>
+    <div><h4>起点之后（过程）</h4><ul>${after.slice(0, 30).map(li).join("") || '<li><span class="t"></span><span class="k dim">无</span><span></span></li>'}</ul></div>
+  </div></td>`;
+  tr.after(d);
+};
+document.querySelectorAll("#rhours button").forEach((b) => b.onclick = () => { rHours = Number(b.dataset.h); segOn("#rhours button", b); loadReview(); });
+document.querySelectorAll("#rwin button").forEach((b) => b.onclick = () => { rWin = Number(b.dataset.w); segOn("#rwin button", b); loadReview(); });
+document.querySelectorAll("#rfg button").forEach((b) => b.onclick = () => { rFg = b.dataset.g; segOn("#rfg button", b); renderReview(); });
+document.querySelectorAll("#rst button").forEach((b) => b.onclick = () => { rSt = b.dataset.s; segOn("#rst button", b); renderReview(); });
+
+// ---- 模拟交易页：策略 = 一段 JS（entry / step），POST /api/simulate 在 sidecar 的 worker 里跑；一次带回策略 / 基准 / 可选特征统计 / console 输出 ----
+let sim = null, sHours = 72;
+const EXIT_LABEL = { now: "持有至今", open: "持仓中" };
+const CODE_KEY = "fomomo.sim.code", CODE_PREV_KEY = "fomomo.sim.prev";
+/** 模板就是文档：每个都是完整可跑的策略 */
+const SIM_TEMPLATES = [
+  ["2× 出本 · 保本 · 尾仓到底", `// 出本卖法里唯一两段「去掉最好一笔」都为正的一种（research sellside.md）：
+// 2× 卖一半收回本金；出本后尾仓跌回 1.1× 就保本清掉，涨就拿到 24h 窗末再清。出本前不设止损——每一种止损都更差
+// 全买：+25%，去掉最好一笔 +13%；归零 184 笔（什么都不卖拿到底是 238 笔）
+// 配 15 分钟稳入场：+38% / 去掉最好一笔 +10%
+({
+  step(s) {
+    if (!s.sold(2)) {
+      if (s.x >= 2) return s.sell(0.5, "出本");
+    } else if (s.x < 1.1) return s.sellAll("保本");
+    if (s.windowLeft <= 60) return s.sellAll("到期");
+  },
+})`],
+  ["3× 出本 · 保本 · 尾仓到底", `// 多赌大牛：3× 才出本（卖 1/3 收回本金，留 2/3 尾仓），之后跌回 1.1× 保本清，涨就拿到 24h 窗末再清
+// 11 枚 ≥50× 的币拿住 6 枚（2× 版只拿住 4 枚），总收益更高——但后 7 天去掉最好一笔为负，归零比 2× 版多 38 笔
+({
+  step(s) {
+    if (!s.sold(3)) {
+      if (s.x >= 3) return s.sell(1 / 3, "出本");
+    } else if (s.x < 1.1) return s.sellAll("保本");
+    if (s.windowLeft <= 60) return s.sellAll("到期");
+  },
+})`],
+  ["2× 全清", `// 到 2× 全部卖出；跌到 0.5× 止损；两个都没碰到的尾仓持有至今按现价估值
+({
+  step(s) {
+    if (s.x <= 0.5) return s.sellAll("止损");
+    if (s.x >= 2) return s.sellAll("止盈 2×");
+  },
+})`],
+  ["2× 出本 · 尾仓至今", `// 到 2× 卖一半收回本金，剩下一半留着（持有至今按现价估值）
+// 出本前跌到 0.5× 止损；出本后尾仓不再止损——归零就归零，冲就一直拿
+({
+  step(s) {
+    if (!s.sold(2)) {
+      if (s.x <= 0.5) return s.sellAll("止损");
+      if (s.x >= 2) return s.sell(0.5, "出本");
+    }
+  },
+})`],
+  ["阶梯 2/4/8×", `// 分批：2× 卖 50%、4× 卖 25%、8× 卖 12.5%，留 12.5% 持有至今；全程 0.5× 止损（对剩余仓位）
+// 用 s.state 记走到第几腿：一根 K 跳过两档时两腿同一采样成交
+const LEGS = [[2, 0.5], [4, 0.25], [8, 0.125]];
+({
+  step(s) {
+    if (s.x <= 0.5) return s.sellAll("止损");
+    s.state.i ??= 0;
+    while (s.state.i < LEGS.length && s.x >= LEGS[s.state.i][0]) {
+      const [x, pct] = LEGS[s.state.i++];
+      s.sell(pct, x + "× 分批");
+    }
+  },
+})`],
+  ["回撤止盈", `// 从入场后最高点回撤 30% 就清仓（涨得越高卖得越高）；最高点没到 1.5× 之前不算回撤，用 0.5× 硬止损
+({
+  step(s) {
+    if (s.x <= 0.5) return s.sellAll("止损");
+    if (s.peakX >= 1.5 && s.dd >= 0.3) return s.sellAll("回撤 30%");
+  },
+})`],
+  ["第二个群喊了", `// 别的群也喊了 = 扩散信号：第一次出现时卖 25% 锁一点，剩下按出本走
+// 30 分钟里只有首喊群自己在喊、又没到 1.5× → 走人
+({
+  step(s) {
+    if (s.x <= 0.5) return s.sellAll("止损");
+    const others = s.events.calls.filter((c) => c.grp !== s.token.firstGroup).length;
+    if (others >= 1 && !s.state.spread) { s.state.spread = true; s.sell(0.25, "第二个群"); }
+    if (s.x >= 2 && !s.sold(2)) s.sell(0.5, "出本");
+    if (s.held >= 1800 && others === 0 && s.peakX < 1.5) return s.sellAll("30min 没扩散");
+  },
+})`],
+  ["挑币 + 加仓", `// entry：只买基准市值 < $50k 的；有官推链接的多下一倍（默认每单在右边设）。点下面的特征 chip 会把条件插进来
+({
+  entry(t) {
+    if (!t.features.has("mc_lt_50k")) return 0;
+    return t.features.has("tw_has") ? 200 : 100;
+  },
+  step(s) {
+    if (s.x <= 0.5) return s.sellAll("止损");
+    if (s.x >= 2 && !s.sold(2)) return s.sell(0.5, "出本");
+  },
+})`],
+  ["S4c · 15 分钟稳再买 · 出本保本", `// research/2026-09-15-angles/CrossAngle/plans.md S4c：有选择地买 + 2× 出本保本
+// 死区：卡片成交量 ≥ 3× 市值；市值 ≥ $5M；新币（创建 <3h）且官推链接是一条推文、或官推账号 ≥ 2 年——「老账号」只对新币生效，老币 + 老账号是好币
+// 15–30 分钟里：相对首喊 0.9–1.5×、期间最低 ≥0.8× 才买；卡片显示还没别的群在聊、且成交量 ≥ 1.6× 市值的不买
+// 两段去掉最好一笔 +44% / +23%（n 76 / 38），归零 ≤5%，峰值并发 13 笔 → 本金 ≤ $1,300
+({
+  entry(t) {
+    if (t.card && t.card.volume != null && t.card.mc && t.card.volume / t.card.mc >= 3) return 0;
+    if (t.mc >= 5_000_000) return 0;
+    if (t.ageSec != null && t.ageSec < 3 * 3600 && (t.twitter.isTweet || (t.twitter.joined && t.t0 - t.twitter.joined >= 730 * 86400))) return 0;
+    return "watch";
+  },
+  step(s) {
+    const t = s.token;
+    if (!s.holding) {
+      if (s.sinceCall < 900 || s.sinceCall > 1800) return;
+      const card = t.card;
+      if (card && card.groups === 0 && card.volume != null && card.mc && card.volume / card.mc >= 1.6) return;
+      if (s.callX >= 0.9 && s.callX <= 1.5 && s.callMinX >= 0.8) s.buy(undefined, "15m 稳");
+      return;
+    }
+    // 2× 出本 · 保本 · 尾仓到底
+    if (!s.sold(2)) {
+      if (s.x >= 2) return s.sell(0.5, "出本");
+    } else if (s.x < 1.1) return s.sellAll("保本");
+    if (s.windowLeft <= 60) return s.sellAll("到期");
+  },
+})`],
+  ["研究版 · 早死早走 + 追踪", `// 2026-09-15 四个角度（传播 / 路径 / 来源 / 亏损）在 12 天 1,046 币上独立得出、交叉验证过的规则（research/2026-09-15-angles/SYNTHESIS.md）：
+// 入场死区：卡片成交量 ≥ 3× 市值（赢 7%）、官推账号 ≥ 2 年（买的老号，赢 14%）、市值 ≥ $5M
+// 15 分钟 <0.6× 清仓：抓住 2/3 的归零，只误伤 18 个后来翻倍的；5 分钟 <0.7× 更早但误伤翻倍（可删）
+// 5 分钟内就 ≥1.5× 的是派发：先出一半（这类币只有 12% 最后比那时更高）；10 分钟内到过 2× 且 15 分钟已回撤一半 → 清
+// 峰后平均回撤 86%，追踪止损是拿住的唯一方式；30 分钟后才到的峰更能拿住，所以 30 分钟后回撤容忍放宽到 50%
+// 30d：637 笔 +24.8%，去掉最好一笔 +$12,574，尾仓归零 17 个（全买拿到底是 226 个），前 9 天 +29% / 后 4 天 +9.8%
+({
+  entry(t) {
+    if (t.card && t.card.volume != null && t.card.mc && t.card.volume / t.card.mc >= 3) return 0;
+    if (t.twitter.joined && t.t0 - t.twitter.joined >= 730 * 86400) return 0;
+    if (t.mc >= 5_000_000) return 0;
+  },
+  step(s) {
+    if (s.held >= 300 && s.held < 320 && s.x < 0.7) return s.sellAll("5m<0.7");
+    if (s.held >= 900 && s.held < 920 && s.x < 0.6) return s.sellAll("15m<0.6");
+    if (s.held <= 300 && s.x >= 1.5 && !s.state.fast) { s.state.fast = true; s.sell(0.5, "5m≥1.5 出半"); }
+    if (s.held <= 600 && s.peakX >= 2) s.state.fast2 = true;
+    if (s.state.fast2 && s.held >= 900 && s.x < s.peakX * 0.5) return s.sellAll("快2×后回撤半");
+    const dd = s.held < 1800 ? 0.35 : 0.5;
+    if (s.peakX >= 1.5 && s.dd >= dd) return s.sellAll("回撤");
+    if (s.windowLeft <= 60) return s.sellAll("到期");
+  },
+})`],
+  ["什么都不卖", `// 买入后一直拿着，按现价估值——「什么都不做」值多少钱
+({ step() {} })`],
+  ["小市值 · 池子厚 · 热度加仓", `// 09-03～09-14 真库 1,124 笔上两轮网格（卖法 ≈1 万种 × 入场信号 30 余种）搜出来的：
+// 入场：基准市值 $50k–200k，且入场时流动性 ≥ 市值的 10%（池子薄的那档整体是亏的）；
+//       机器人卡片显示已有 ≥2 个群在聊、或 24h 成交量 ≥ 市值 → 下 $200，否则 $100
+// 卖出：不设止损（每一种止损都更差）；2× 先出 34%；最高点 ≥1.5× 后回撤 30% 清仓；5× 清仓；24h 到期清仓
+// 那 12 天：268 笔 +35.3%（去掉最好一笔 +$11,082），前 5 天 +28.8% / 后 7 天 +41.4%，9/12 天为正；单边成本 2% 仍 +32.6%
+// 是在同一批数据上挑出来的——看右边「验证段」随新数据怎么走，别直接当结论
+({
+  entry(t) {
+    if (!t.features.has("mc_50k_200k")) return 0;
+    if (t.liq == null || t.liq / t.mc < 0.1) return 0;
+    const hot = (t.card?.groups ?? 0) >= 2 || (t.card?.volume != null && t.card.mc != null && t.card.volume >= t.card.mc);
+    return hot ? 200 : 100;
+  },
+  step(s) {
+    if (s.peakX >= 1.5 && s.dd >= 0.3) return s.sellAll("回撤");
+    if (s.x >= 2 && !s.sold(2)) s.sell(0.34, "出本");
+    if (s.x >= 5) return s.sellAll("止盈");
+    if (s.windowLeft <= 60) return s.sellAll("到期");
+  },
+})`],
+  ["稳 · <$1M · 池子厚 · GMGN 拿远", `// 同一次网格里最稳的一支：12 天每天都是正的（后 7 天 7/7），收益低一档（+14.8%，成本 2% 时 +12.5%）
+// 入场：基准市值 <$1M 且流动性 ≥ 市值 10%
+// 卖出：GMGN 上有人喊过（s.events.gmgn）的币拿远一点——8× 清、回撤 50% 清；其他币 2× 出 34%、回撤 60% 清、5× 清、30 分钟没到 1.3× 就走；都到期清
+({
+  entry(t) {
+    if (t.features.has("mc_ge_1m")) return 0;
+    if (t.liq == null || t.liq / t.mc < 0.1) return 0;
+  },
+  step(s) {
+    if (s.events.gmgn.length) {
+      if (s.x >= 8) return s.sellAll("止盈 8×");
+      if (s.peakX >= 2 && s.dd >= 0.5) return s.sellAll("回撤");
+      if (s.windowLeft <= 60) return s.sellAll("到期");
+      return;
+    }
+    if (s.peakX >= 1.5 && s.dd >= 0.6) return s.sellAll("回撤");
+    if (s.x >= 2 && !s.sold(2)) s.sell(0.34, "出本");
+    if (s.x >= 5) return s.sellAll("止盈");
+    if (s.held >= 1800 && s.peakX < 1.3) return s.sellAll("超时");
+    if (s.windowLeft <= 60) return s.sellAll("到期");
+  },
+})`],
+];
+const codeEl = $("#s-code");
+const saveCode = () => { try { localStorage.setItem(CODE_KEY, codeEl.value); } catch {} };
+codeEl.value = (() => { try { return localStorage.getItem(CODE_KEY); } catch { return null; } })() || SIM_TEMPLATES[0][1];
+codeEl.oninput = saveCode;
+codeEl.onkeydown = (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); runSim(); }
+  else if (e.key === "Tab") { e.preventDefault(); codeEl.setRangeText("  ", codeEl.selectionStart, codeEl.selectionEnd, "end"); saveCode(); }
+};
+/** 模板替换编辑器内容；替换前的代码存一份，「撤回」能拿回来 */
+function renderTemplates() {
+  const prev = (() => { try { return localStorage.getItem(CODE_PREV_KEY); } catch { return null; } })();
+  $("#s-tpl").innerHTML = SIM_TEMPLATES.map(([name], i) => `<button type="button" class="ghost" data-tpl="${i}">${esc(name)}</button>`).join("") + (prev ? `<button type="button" class="ghost" data-tpl="prev" title="换回模板替换前的代码">撤回</button>` : "");
+}
+$("#s-tpl").onclick = (e) => {
+  const b = e.target.closest("button[data-tpl]");
+  if (!b) return;
+  const cur = codeEl.value;
+  if (b.dataset.tpl === "prev") {
+    codeEl.value = localStorage.getItem(CODE_PREV_KEY) || cur;
+    localStorage.removeItem(CODE_PREV_KEY);
+  } else {
+    if (cur.trim() && !SIM_TEMPLATES.some(([, c]) => c === cur)) { try { localStorage.setItem(CODE_PREV_KEY, cur); } catch {} }
+    codeEl.value = SIM_TEMPLATES[Number(b.dataset.tpl)][1];
+  }
+  saveCode();
+  renderTemplates();
+  runSim();
+};
+renderTemplates();
+const hold = (sec) => sec < 3600 ? `${Math.round(sec / 60)}m` : `${(sec / 3600).toFixed(1)}h`;
+/** 进页面：按编辑器里的策略先跑一遍 */
+function loadSim() { runSim(); }
+/** 出错：显示原因 + 出错的币 / 时刻，并把编辑器光标放到那一行 */
+function showSimError(j) {
+  const el = $("#s-err");
+  el.hidden = false;
+  el.textContent = `${j.error || "失败"}${j.token ? `　币：${j.token}` : ""}${j.ts ? `　${fmtTime(j.ts)}` : ""}`;
+  codeEl.classList.add("err");
+  if (j.line) {
+    const lines = codeEl.value.split("\n");
+    const start = lines.slice(0, j.line - 1).reduce((s, l) => s + l.length + 1, 0);
+    codeEl.focus();
+    codeEl.setSelectionRange(start, start + (lines[j.line - 1]?.length ?? 0));
+  }
+}
+async function runSim() {
+  const stat = $("#s-stat");
+  stat.textContent = "计算中…";
+  $("#s-err").hidden = true;
+  codeEl.classList.remove("err");
+  const body = { code: codeEl.value, hours: sHours, win: 2, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", fee: Number($("#s-fee").value) || 0, stake: Number($("#s-stake").value) || 100 };
+  try {
+    const r = await fetch("/api/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+    if (!r.ok) { showSimError(j); stat.textContent = ""; return; }
+    sim = j;
+    renderSim();
+    const log = $("#s-log");
+    log.hidden = !sim.logs.length;
+    log.textContent = sim.logs.join("\n");
+    stat.textContent = `${sim.elapsed} ms`;
+  } catch (e) {
+    showSimError({ error: e.message });
+    stat.textContent = "";
+  }
+}
+/** 退出原因的样式：系统的 now / open 固定色，策略 tag 按出现顺序轮色 */
+function reasonCls(reason, palette) { return reason in EXIT_LABEL ? reason : `c${palette.indexOf(reason) % 6}`; }
+const reasonText = (reason) => EXIT_LABEL[reason] || reason;
+/** 盈利叠加：每笔盈利交易的价格路径（[入场后秒, 倍数]）叠在一张对数图上，1× 基线；● 买入、▲ 卖出腿。横轴到最长一条为止（≤24h） */
+const OVER_MAX = 40;
+function drawOverlay(svg, trades, emptyText) {
+  const W = 800, H = 280, L = 40, R = 12, T = 22, B = 24;
+  if (!trades.length) { svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle">${esc(emptyText)}</text>`; return; }
+  const secs = trades.flatMap((t) => [t.path[t.path.length - 1][0], ...t.fills.map((f) => f.ts - t.entryAt)]);
+  const xMax = [3600, 7200, 10800, 21600, 43200, 86400].find((v) => v >= Math.max(...secs)) ?? 86400;
+  const vals = trades.flatMap((t) => [...t.path.map((p) => p[1]), ...t.fills.map((f) => f.x)]).filter((v) => v > 0);
+  const lo = Math.min(0.5, ...vals), hi = Math.max(2, ...vals);
+  const lLo = Math.log2(lo), lHi = Math.log2(hi);
+  const yOf = (v) => T + (H - T - B) * (1 - (Math.log2(Math.max(v, lo)) - lLo) / (lHi - lLo));
+  const xOf = (sec) => L + (W - L - R) * Math.min(Math.max(sec, 0), xMax) / xMax;
+  const every = Math.ceil((lHi - lLo) / 7);
+  const yt = [];
+  for (let e = Math.ceil(lLo); e <= Math.floor(lHi); e += every) yt.push(2 ** e);
+  const ticks = yt.map((v) => `<line class="grid-l" x1="${L}" x2="${W - R}" y1="${yOf(v)}" y2="${yOf(v)}"/><text x="${L - 6}" y="${yOf(v) + 4}" text-anchor="end">${v < 1 ? v : Math.round(v)}×</text>`).join("");
+  const xl = (sec) => sec >= 3600 ? `${sec / 3600}h` : `${sec / 60}m`;
+  const tl = [0, 1, 2, 3, 4].map((i) => `<text x="${xOf(xMax * i / 4)}" y="${H - 8}" text-anchor="${i === 0 ? "start" : i === 4 ? "end" : "middle"}">${xl(xMax * i / 4)}</text>`).join("");
+  const maxPnl = Math.max(...trades.map((t) => t.pnl));
+  const lines = trades.map((t, i) => {
+    const sym = t.symbol || t.address.slice(0, 8);
+    const d = t.path.map(([sec, v], j) => `${j ? "L" : "M"}${xOf(sec).toFixed(1)},${yOf(v).toFixed(1)}`).join(" ");
+    const sells = t.fills.map((f) => { const cx = xOf(f.ts - t.entryAt), cy = yOf(f.x); return `<path class="sell" d="M${cx.toFixed(1)},${(cy - 5).toFixed(1)} L${(cx + 4.5).toFixed(1)},${(cy + 3).toFixed(1)} L${(cx - 4.5).toFixed(1)},${(cy + 3).toFixed(1)} Z"><title>${esc(sym)} ${x(f.x)} 卖 ${Math.round(f.pct * 100)}%「${esc(f.tag)}」</title></path>`; }).join("");
+    return `<g class="ov" data-lab="${esc(sym)} · ${money(t.pnl)}" style="opacity:${(0.3 + 0.7 * Math.sqrt(t.pnl / maxPnl)).toFixed(2)}"><path class="ln" d="${d}"/><path class="hit" d="${d}"><title>${esc(sym)} ${money(t.pnl)} · 最高 ${x(t.peakX)}</title></path><circle class="buy" cx="${xOf(0)}" cy="${yOf(1)}" r="3"/>${sells}</g>`;
+  }).join("");
+  svg.innerHTML = `${ticks}<line class="zero" x1="${L}" x2="${W - R}" y1="${yOf(1)}" y2="${yOf(1)}"/>${lines}${tl}<text class="lab" x="${W - R}" y="${T - 8}" text-anchor="end"></text>`;
+}
+$("#s-over").onmouseover = (e) => { const g = e.target.closest(".ov"); $("#s-over .lab").textContent = g ? g.dataset.lab : ""; };
+$("#s-over").onmouseleave = () => { $("#s-over .lab").textContent = ""; };
+function renderSim() {
+  if (!sim) return;
+  const s = sim.strategy, b = sim.baseline;
+  $("#simout").hidden = false;
+  const pctOf = (v) => v == null ? "—" : `${(v * 100).toFixed(0)}%`;
+  const open = (s.byReason.open?.n ?? 0) + (s.byReason.now?.n ?? 0);
+  const hasEntry = s.declined > 0 || s.n !== b.n;
+  $("#s-n").innerHTML = `${s.n}${open ? ` <small>· ${open} 持仓中</small>` : ""}`;
+  $("#s-n-sub").textContent = `投入 $${Math.round(s.invested).toLocaleString()} · 基准（全部合格币）${b.n} 笔${s.declined ? ` · entry 不买 ${s.declined}` : ""}${s.watched ? ` · 观察未买 ${s.watched}` : ""}${Object.values(s.skipped).some((n) => n) ? ` · 跳过 无基准 ${s.skipped.no_base} / 采样不足 ${s.skipped.low_coverage + s.skipped.no_samples}${s.skipped.no_entry ? ` / 无法入场 ${s.skipped.no_entry}` : ""}` : ""}`;
+  $("#s-pnl").innerHTML = `<span class="${signCls(s.pnl)}">${money(s.pnl)}</span> <small>${pctOf(s.ret)}</small>`;
+  $("#s-pnl-sub").innerHTML = `基准 <span class="${signCls(b.pnl)}">${money(b.pnl)}</span>（${pctOf(b.ret)}）${hasEntry && b.ret != null && s.ret != null ? ` · 差 ${((s.ret - b.ret) * 100).toFixed(0)} 个点` : ""}`;
+  $("#s-pnl-split").innerHTML = `已实现 <span class="${signCls(s.realized)}">${money(s.realized)}</span> · 未实现 <span class="${signCls(s.unrealized)}">${money(s.unrealized)}</span>${open ? "（尾仓按现价）" : ""}`;
+  $("#s-win").innerHTML = `${pctOf(s.winRate)} <small>${s.median == null ? "" : money(s.median)}</small>`;
+  $("#s-win-sub").textContent = `${s.wins} 笔盈利 · 基准胜率 ${pctOf(b.winRate)}，中位 ${b.median == null ? "—" : money(b.median)}`;
+  $("#s-best").innerHTML = s.best ? `<span class="up">${money(s.best.pnl)}</span> <small class="down">${money(s.worst.pnl)}</small>` : "—";
+  $("#s-best-sub").innerHTML = s.best ? `${esc(s.best.symbol || s.best.address.slice(0, 8))} ${x(s.best.lastX)}（${esc(reasonText(s.best.reason))}） / ${esc(s.worst.symbol || s.worst.address.slice(0, 8))} ${x(s.worst.lastX)}（${esc(reasonText(s.worst.reason))}）<br />去掉最好一笔 <span class="${signCls(s.exBest)}">${money(s.exBest)}</span>${s.pnl > 0 && s.best.pnl > 0 ? `（它占 ${Math.round(s.best.pnl / s.pnl * 100)}%）` : ""}` : "没有成交的币";
+  const byTime = [...s.trades].sort((p, q) => p.entryAt - q.entryAt).map((t) => ({ ...t, ts: t.entryAt }));
+  const last = drawCumCurve($("#s-curve"), byTime, (t) => t.pnl, (t, cum) => `${fmtTime(t.entryAt)} ${t.symbol || t.address.slice(0, 8)} ${reasonText(t.reason)} ${x(t.lastX)} ${money(t.pnl)} → 累计 ${money(cum)}`, "没有成交的币", s.env.stake);
+  $("#s-curve-hint").textContent = last == null ? "" : `默认每单 $${s.env.stake} · 单边成本 ${(s.env.fee * 100).toFixed(1)}% · 终值 ${money(last)}`;
+  // 退出原因：策略 tag 按 n 降序，系统的 now / open 排最后
+  const reasons = Object.entries(s.byReason).sort(([ka, ra], [kb, rb]) => (ka in EXIT_LABEL) - (kb in EXIT_LABEL) || rb.n - ra.n);
+  // 配色表：退出原因按出现顺序轮色，中间腿的 tag（出本之类，最终原因里可能没有）接在后面
+  const palette = [...new Set([...reasons.map(([k]) => k).filter((k) => !(k in EXIT_LABEL)), ...s.trades.flatMap((t) => t.fills.map((f) => f.tag))])];
+  const max = Math.max(1, ...reasons.map(([, r]) => r.n));
+  $("#s-reasons").innerHTML = reasons.map(([k, r]) => `<div class="rk">
+      <div class="nm"><span class="exit ${reasonCls(k, palette)}">${esc(reasonText(k))}</span><div class="tr" style="--c:${r.pnl >= 0 ? "var(--up)" : "var(--down)"}"><i style="width:${r.n / max * 100}%"></i></div></div>
+      <div class="n">${r.n}</div><div class="v ${signCls(r.pnl)}">${money(r.pnl)}</div><div class="n">${b.byReason[k]?.n ?? 0} 基准</div>
+    </div>`).join("") || `<div class="empty">—</div>`;
+  const fillsOf = (t) => t.fills.length ? `<span class="fills">${t.fills.map((f) => `<b>${f.x.toFixed(f.x >= 10 ? 0 : 1)}×</b> 卖 ${Math.round(f.pct * 100)}%<span class="dim">「${esc(f.tag)}」</span>`).join("，")}${t.remaining > 1e-9 ? `，留 ${Math.round(t.remaining * 100)}%` : ""}</span>` : `<span class="dim">—</span>`;
+  const rp = (t) => t.realized - t.stake * (1 - t.remaining);
+  const up = (t) => t.unrealized - t.stake * t.remaining;
+  const exitTag = (t) => `<span class="exit ${reasonCls(t.reason, palette)}${t.gap ? " gap" : ""}" title="${t.markedAtLast ? "现价不可用，按最后采样估值" : ""}${t.gap ? " 采样中途断了" : ""}">${esc(reasonText(t.reason))}${t.markedAtLast ? "*" : ""}</span>`;
+  $("#strades tbody").innerHTML = s.trades.map((t) => `<tr>
+      <td class="when">${esc(fmtTime(t.entryAt))}${t.waitSec ? `<br /><small class="dim">等 ${Math.round(t.waitSec / 60)}m · ${x(t.entryX)}</small>` : ""}</td>
+      <td style="text-align:left">${tokLink({ chain: t.chain, address: t.address, logo: t.logo, symbol: t.symbol })}</td>
+      <td class="mono">${compact(t.entryMc)}</td>
+      <td class="mono">${t.stake}</td>
+      <td style="text-align:left">${fillsOf(t)}</td>
+      <td>${exitTag(t)} <span class="dim">${esc(fmtTime(t.exitAt))}</span></td>
+      <td class="mono">${hold(t.holdSec)}</td>
+      <td class="${t.lastX >= 1 ? "up" : "down"}">${x(t.lastX)}</td>
+      <td class="dim">${x(t.peakX)}</td>
+      <td class="${t.remaining >= 1 - 1e-9 ? "dim" : signCls(rp(t))}">${t.remaining >= 1 - 1e-9 ? "—" : money(rp(t))}</td>
+      <td class="${t.remaining <= 1e-9 ? "dim" : signCls(up(t))}">${t.remaining <= 1e-9 ? "—" : money(up(t))}</td>
+      <td class="${signCls(t.pnl)}"><b>${money(t.pnl)}</b></td>
+    </tr>`).join("") || `<tr><td colspan="12" class="dim" style="text-align:center">没有成交的币</td></tr>`;
+  // 盈利叠加：只画 pnl > 0 且引擎给了路径的；超过 OVER_MAX 条只画最赚的
+  const prof = s.trades.filter((t) => t.pnl > 0);
+  const withPath = prof.filter((t) => (t.path ?? []).length).sort((p, q) => q.pnl - p.pnl);
+  const drawn = withPath.slice(0, OVER_MAX);
+  drawOverlay($("#s-over"), drawn, prof.length ? "引擎没给价格路径" : "没有盈利的成交");
+  $("#s-over-hint").textContent = drawn.length ? `${drawn.length} 条${withPath.length > drawn.length ? ` · 共 ${withPath.length} 笔盈利，只画最赚的 ${OVER_MAX} 条` : ""}` : "";
+  // 购买记录 / 卖出记录：按时间倒序；卖出到手 = 投入 × 比例 × 倍数 × (1 − 单边成本)
+  const sym = (t) => `<td class="sym" style="text-align:left" title="${esc(t.symbol || t.address)}">${esc(t.symbol || t.address.slice(0, 8))}</td>`;
+  $("#s-buys tbody").innerHTML = [...s.trades].sort((p, q) => q.entryAt - p.entryAt).map((t) => `<tr><td class="mono dim">${esc(fmtTime(t.entryAt))}</td>${sym(t)}<td class="mono">${compact(t.entryMc)}</td><td class="dim">${t.waitSec ? `${Math.round(t.waitSec / 60)}m · ${x(t.entryX)}` : "立刻"}</td><td class="mono">$${t.stake}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="empty">—</td></tr>`;
+  const legs = s.trades.flatMap((t) => t.fills.map((f) => ({ t, f }))).sort((p, q) => q.f.ts - p.f.ts);
+  $("#s-sells tbody").innerHTML = legs.map(({ t, f }) => `<tr><td class="mono dim">${esc(fmtTime(f.ts))}</td>${sym(t)}<td class="${f.x >= 1 ? "up" : "down"}">${x(f.x)}</td><td>${Math.round(f.pct * 100)}%</td><td><span class="exit ${reasonCls(f.tag, palette)}">${esc(f.tag)}</span></td><td class="mono">$${Math.round(t.stake * f.pct * f.x * (1 - s.env.fee))}</td></tr>`).join("")
+    || `<tr><td colspan="6" class="empty">还没有卖出</td></tr>`;
+  // 持仓：还没卖完的尾仓，按合计盈亏降序
+  const openTrades = s.trades.filter((t) => t.remaining > 1e-9).sort((p, q) => q.pnl - p.pnl);
+  $("#sopen tbody").innerHTML = openTrades.map((t) => `<tr>
+      <td>${tokLink({ chain: t.chain, address: t.address, logo: t.logo, symbol: t.symbol })}</td>
+      <td class="when">${esc(fmtTime(t.entryAt))}${t.waitSec ? ` <small class="dim">等 ${Math.round(t.waitSec / 60)}m</small>` : ""}</td>
+      <td class="mono">$${t.stake}</td>
+      <td class="mono">${Math.round(t.remaining * 100)}%</td>
+      <td class="${t.lastX >= 1 ? "up" : "down"}">${x(t.lastX)}</td>
+      <td class="dim">${x(t.peakX)}</td>
+      <td class="${t.remaining >= 1 - 1e-9 ? "dim" : signCls(rp(t))}">${t.remaining >= 1 - 1e-9 ? "—" : money(rp(t))}</td>
+      <td class="${signCls(up(t))}">${money(up(t))}</td>
+      <td class="${signCls(t.pnl)}"><b>${money(t.pnl)}</b></td>
+      <td>${exitTag(t)}</td>
+    </tr>`).join("") || `<tr><td colspan="10" class="dim" style="text-align:center">没有持仓中的尾仓</td></tr>`;
+  const tailVal = openTrades.reduce((a, t) => a + t.unrealized, 0), tailPnl = openTrades.reduce((a, t) => a + up(t), 0);
+  $("#s-open-hint").textContent = openTrades.length ? `${openTrades.length} 笔 · 尾仓现值 $${Math.round(tailVal).toLocaleString()} · 未实现 ${money(tailPnl)}` : "";
+  // 按日：入场日分组（服务端按浏览器时区分好）；基准同日对照。验证段 = 基准日历里最后 N 天（策略某天一笔不买也不影响切法）
+  const bDay = new Map(b.days.map((d) => [d.day, d]));
+  const N = Number($("#s-holdout").value);
+  const calendar = b.days.map((d) => d.day);
+  const holdout = new Set(N > 0 && calendar.length > N ? calendar.slice(-N) : []);
+  const upDays = s.days.filter((d) => d.pnl > 0).length, upExBest = s.days.filter((d) => d.exBest > 0).length;
+  const dayPnls = s.days.map((d) => d.pnl).sort((p, q) => p - q);
+  const medDay = dayPnls.length ? (dayPnls.length % 2 ? dayPnls[(dayPnls.length - 1) / 2] : (dayPnls[dayPnls.length / 2 - 1] + dayPnls[dayPnls.length / 2]) / 2) : null;
+  $("#s-days-hint").textContent = s.days.length ? `${s.days.length} 天 · ${upDays} 天盈利 · 去掉每天最好一笔后 ${upExBest} 天盈利 · 日净中位 ${money(medDay)} · 日均投入 $${Math.round(s.invested / s.days.length).toLocaleString()}` : "";
+  const maxAbs = Math.max(1, ...s.days.map((d) => Math.abs(d.pnl)));
+  const bar = (v) => `<i class="bar" style="width:${Math.round(Math.abs(v) / maxAbs * 48)}px;background:${v >= 0 ? "var(--up)" : "var(--down)"}"></i>`;
+  $("#sdays tbody").innerHTML = s.days.map((d) => `<tr class="${holdout.has(d.day) ? "holdout" : ""}">
+      <td class="day">${esc(d.day)}</td>
+      <td class="mono">${d.n}${d.open ? ` <small class="dim">· ${d.open} 持仓中</small>` : ""}</td>
+      <td class="mono">$${Math.round(d.invested).toLocaleString()}</td>
+      <td>${pctOf(d.n ? d.wins / d.n : null)}</td>
+      <td class="${signCls(d.realized)}">${money(d.realized)}</td>
+      <td class="${signCls(d.unrealized)}">${money(d.unrealized)}</td>
+      <td class="${signCls(d.pnl)}"><b>${money(d.pnl)}</b>${bar(d.pnl)}</td>
+      <td class="${signCls(d.exBest)}">${money(d.exBest)}</td>
+      <td class="best" style="text-align:left">${d.best ? `${tokLink({ chain: d.best.chain, address: d.best.address, logo: d.best.logo, symbol: d.best.symbol })} <span class="${signCls(d.best.pnl)}">${money(d.best.pnl)}</span>` : "—"}</td>
+      <td class="${signCls(bDay.get(d.day)?.pnl ?? 0)}">${bDay.has(d.day) ? money(bDay.get(d.day).pnl) : "—"}</td>
+    </tr>`).join("") + (s.days.length > 1 ? `<tr class="sum"><td class="day">合计</td><td class="mono">${s.n}</td><td class="mono">$${Math.round(s.invested).toLocaleString()}</td><td>${pctOf(s.winRate)}</td><td class="${signCls(s.realized)}">${money(s.realized)}</td><td class="${signCls(s.unrealized)}">${money(s.unrealized)}</td><td class="${signCls(s.pnl)}">${money(s.pnl)}</td><td class="${signCls(s.exBest)}">${money(s.exBest)}</td><td class="best" style="text-align:left">${s.best ? `${esc(s.best.symbol || s.best.address.slice(0, 8))} <span class="${signCls(s.best.pnl)}">${money(s.best.pnl)}</span>` : "—"}</td><td class="${signCls(b.pnl)}">${money(b.pnl)}</td></tr>` : "") || `<tr><td colspan="10" class="dim" style="text-align:center">—</td></tr>`;
+  // 调参段 vs 验证段
+  const card = $("#s-split-card");
+  card.hidden = holdout.size === 0;
+  if (holdout.size) {
+    const seg = (days, bdays) => {
+      const n = days.reduce((a, d) => a + d.n, 0), inv = days.reduce((a, d) => a + d.invested, 0), pnl = days.reduce((a, d) => a + d.pnl, 0), wins = days.reduce((a, d) => a + d.wins, 0);
+      return { days: days.length, n, inv, pnl, ret: inv ? pnl / inv : null, winRate: n ? wins / n : null, exBest: days.reduce((a, d) => a + d.exBest, 0), upDays: days.filter((d) => d.pnl > 0).length, base: bdays.reduce((a, d) => a + d.pnl, 0) };
+    };
+    const rows = [["调参段", seg(s.days.filter((d) => !holdout.has(d.day)), b.days.filter((d) => !holdout.has(d.day)))], ["验证段", seg(s.days.filter((d) => holdout.has(d.day)), b.days.filter((d) => holdout.has(d.day)))]];
+    $("#ssplit tbody").innerHTML = rows.map(([name, g]) => `<tr><td style="text-align:left"><b>${name}</b></td><td class="mono">${g.days}</td><td class="mono">${g.n}</td><td class="mono">$${Math.round(g.inv).toLocaleString()}</td><td>${pctOf(g.winRate)}</td><td class="${signCls(g.pnl)}"><b>${money(g.pnl)}</b></td><td class="${signCls(g.ret ?? 0)}">${pctOf(g.ret)}</td><td class="${signCls(g.exBest)}">${money(g.exBest)}</td><td class="mono">${g.upDays}/${g.days}</td><td class="${signCls(g.base)}">${money(g.base)}</td></tr>`).join("");
+    const [, fit] = rows[0], [, test] = rows[1];
+    $("#s-split-hint").textContent = `验证段 = ${[...holdout].join("、")}${fit.pnl > 0 && test.pnl <= 0 ? " · 调参段赚、验证段不赚：先别信" : fit.pnl > 0 && test.pnl > 0 ? " · 两段都正" : ""}`;
+  }
+}
+$("#s-run").onclick = runSim;
+$("#s-holdout").onchange = () => { if (sim) renderSim(); };
+document.querySelectorAll(".sim-env input").forEach((i) => i.onkeydown = (e) => { if (e.key === "Enter") runSim(); });
+document.querySelectorAll("#shours button").forEach((b) => b.onclick = () => { sHours = Number(b.dataset.h); segOn("#shours button", b); runSim(); });
+/** 复制 Markdown：报告随 /api/analysis 一起到（服务端已把群 id 换成显示名）。WKWebView / 非安全上下文没有 clipboard API 时退回 execCommand */
+$("#rcopy").onclick = async () => {
+  const stat = $("#rcopy-stat");
+  if (!rv?.markdown) { stat.textContent = "报告还没加载"; return; }
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(rv.markdown);
+    else {
+      const ta = document.createElement("textarea");
+      ta.value = rv.markdown; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+    }
+    stat.textContent = `已复制 ${rv.markdown.length.toLocaleString()} 字`;
+  } catch (e) {
+    stat.textContent = `复制失败：${e.message}`;
+  }
+  setTimeout(() => { stat.textContent = ""; }, 4000);
+};
 // URL hash 直达页签（Swift 悬浮窗底栏「24h」按钮开 dashboard 时带 #battle）
 if (location.hash.length > 1 && TITLES[location.hash.slice(1)]) showTab(location.hash.slice(1));
 setInterval(() => { if ($("#overview").classList.contains("on")) loadOverview(); }, 30_000);

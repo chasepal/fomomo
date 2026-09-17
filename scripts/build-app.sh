@@ -55,14 +55,15 @@ build_sidecar() {
 
   rm -rf "$out" && mkdir -p "$out"
   # CJS 依赖在 ESM 包里会调 require()，banner 补一个基于 import.meta.url 的 require；
-  # native addon 走 --external 留在 node_modules，由 node 原生解析；bufferutil / utf-8-validate 是 ws 的可选加速，没装就跳过
-  (cd "$ROOT" && pnpm exec esbuild src/cli.ts \
-    --bundle --platform=node --format=esm --target=node22 \
-    --outfile="$out/cli.mjs" \
-    --external:better-sqlite3-multiple-ciphers --external:wreq-js \
-    --external:bufferutil --external:utf-8-validate \
-    --banner:js="import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" \
+  # native addon 走 --external 留在 node_modules，由 node 原生解析；bufferutil / utf-8-validate 是 ws 的可选加速，没装就跳过。
+  # 模拟交易的 worker（src/core/sim-worker.ts）单独打成 sim-worker.mjs 与 cli.mjs 并排：core/strategy.ts 按 import.meta.url 同目录找它
+  local esb=(pnpm exec esbuild --bundle --platform=node --format=esm --target=node22
+    --external:better-sqlite3-multiple-ciphers --external:wreq-js
+    --external:bufferutil --external:utf-8-validate
+    --banner:js="import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);"
     --log-level=warning)
+  (cd "$ROOT" && "${esb[@]}" src/cli.ts --outfile="$out/cli.mjs")
+  (cd "$ROOT" && "${esb[@]}" src/core/sim-worker.ts --outfile="$out/sim-worker.mjs")
   cp -R "$ROOT/src/dashboard" "$out/dashboard"
 
   local sqlite_v wreq_v
@@ -198,6 +199,7 @@ echo "✅ $APP"
 echo "   node        $(size "$RES/node/bin/node")"
 echo "   lark-cli    $(size "$RES/bin/lark-cli")"
 echo "   cli.mjs     $(size "$RES/sidecar/cli.mjs")"
+echo "   sim-worker  $(size "$RES/sidecar/sim-worker.mjs")"
 echo "   node_modules $(size "$RES/sidecar/node_modules")"
 echo "   Fomomo      $(size "$CONTENTS/MacOS/Fomomo")"
 echo "   app 总计    $(size "$APP")"

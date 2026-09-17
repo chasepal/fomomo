@@ -3,6 +3,8 @@ import http from "node:http";
 import { DASHBOARD_HTML } from "../config.js";
 import type { FeishuMonitor } from "../feishu/watch.js";
 import type { Engine } from "./engine.js";
+import { analyze, renderMarkdown } from "./analysis.js";
+import { runStrategy } from "./strategy.js";
 import { TRADE_CHAINS } from "./okx.js";
 import type { Sources } from "./sources.js";
 import type { Store } from "./store.js";
@@ -28,6 +30,8 @@ export function startServer(deps: { store: Store; engine: Engine; watchers: Watc
     for await (const chunk of req) s += chunk;
     return s ? JSON.parse(s) : {};
   };
+  /** 原始群 id → 显示名（微信按监听器 / 飞书按 lark 群名） */
+  const groupName = (g: string): string => (g.startsWith("feishu:") ? `飞书 · ${deps.feishu.displayName(g.slice(7))}` : deps.watchers.displayName(g));
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -37,7 +41,7 @@ export function startServer(deps: { store: Store; engine: Engine; watchers: Watc
         return res.end(fs.readFileSync(htmlPath));
       }
       if (url.pathname === "/api/tokens") return json(res, 200, deps.engine.views());
-      // dashboard「交易」页：钱包 / 余额 / 限额状态 + 最近交易 + 持仓；refresh 先重读六链余额
+      // dashboard「交易」页：钱包 / 余额 / 限额状态 + 最近交易 + 持仓；refresh 先重读七链余额
       if (url.pathname === "/api/trade" || (url.pathname === "/api/trade/refresh" && req.method === "POST")) {
         const trade = deps.engine.trade;
         if (!trade) return json(res, 503, { error: "交易模块未装载" });
@@ -61,8 +65,38 @@ export function startServer(deps: { store: Store; engine: Engine; watchers: Watc
         const since = now - hours * 3600;
         const calls = deps.store.report(since);
         const groups: Record<string, string> = {};
-        for (const c of calls) groups[c.group] ??= c.group.startsWith("feishu:") ? `飞书 · ${deps.feishu.displayName(c.group.slice(7))}` : deps.watchers.displayName(c.group);
+        for (const c of calls) groups[c.group] ??= groupName(c.group);
         return json(res, 200, { now, since, hours, calls, groups, bought: deps.store.boughtAddresses() });
+      }
+      // 「复盘」：首喊在过去 hours 内的币，按首喊后 24h 峰倍 ≥ win 分组比较特征（analysis.ts）；hours 1–720 默认 72，win 1.5–10 默认 2。
+      // 同一份报告的 markdown 一并给页面（「复制 Markdown」按钮贴给人 / 模型讨论用；群名已替换成显示名）
+      if (url.pathname === "/api/analysis") {
+        const hours = clamp(Number(url.searchParams.get("hours") ?? 72), 1, 720);
+        const win = clamp(Number(url.searchParams.get("win") ?? 2), 1.5, 10);
+        const now = Math.floor(Date.now() / 1000);
+        const report = analyze(deps.store.analysisInput(now - hours * 3600, now), { win, hours });
+        const groups: Record<string, string> = {};
+        for (const g of Object.keys(report.cohort.byGroup)) groups[g] = groupName(g);
+        for (const t of report.tokens) groups[t.firstGroup] ??= groupName(t.firstGroup);
+        return json(res, 200, { report, groups, markdown: renderMarkdown(report, { group: (g) => groups[g] ?? groupName(g) }) });
+      }
+      // 「模拟交易」页：策略是一段 JS（body.code），在 worker 里编译并跑在 analyze 同一批币、同一条剔除口径的价格路径上。
+      // body = { code, hours, win, tz, fee(单边成本 %), stake(默认每单 USD) }；一次返回策略结果 + 基准（同 step、全部合格币）+ 可选入场特征统计 + console 输出。
+      // 策略代码出错 → 400 { error, phase, token, ts, line }；超时 → 504
+      if (url.pathname === "/api/simulate" && req.method === "POST") {
+        const b = (await readBody(req)) as Partial<{ code: string; hours: number; win: number; tz: string; fee: number; stake: number }>;
+        if (typeof b.code !== "string" || !b.code.trim()) return json(res, 400, { error: "策略代码为空", phase: "compile" });
+        const m = await runStrategy({
+          dbPath: deps.store.path,
+          code: b.code,
+          hours: clamp(Number(b.hours ?? 72), 1, 720),
+          win: clamp(Number(b.win ?? 2), 1.5, 10),
+          tz: typeof b.tz === "string" && b.tz ? b.tz : "UTC",
+          fee: clamp(Number(b.fee ?? 1), 0, 20) / 100,
+          stake: clamp(Number(b.stake ?? 100), 1, 1_000_000),
+        });
+        if (!m.ok) return json(res, m.error.phase === "timeout" ? 504 : m.error.phase === "internal" ? 500 : 400, { error: m.error.message, ...m.error });
+        return json(res, 200, m.result);
       }
       if (url.pathname === "/api/overview") return json(res, 200, deps.store.overview());
       if (url.pathname === "/api/settings" && req.method === "GET") return json(res, 200, deps.store.getSettings());
@@ -131,7 +165,9 @@ export function startServer(deps: { store: Store; engine: Engine; watchers: Watc
 
   const { promise, resolve, reject } = Promise.withResolvers<string>();
   server.on("error", reject);
-  server.listen(DASHBOARD_PORT, "127.0.0.1", () => resolve(`http://127.0.0.1:${DASHBOARD_PORT}/`));
+  // FOMOMO_DASHBOARD_PORT：开发 / 验证时与已安装的 .app 并存（它占着 48765）
+  const port = Number(process.env.FOMOMO_DASHBOARD_PORT) || DASHBOARD_PORT;
+  server.listen(port, "127.0.0.1", () => resolve(`http://127.0.0.1:${port}/`));
   return promise;
 }
 

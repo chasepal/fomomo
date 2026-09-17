@@ -166,6 +166,35 @@ export class WechatReader {
     }
   }
 
+  /**
+   * 某会话在 [from, to] 秒内的全部可见消息（文本 / 链接 / 图片 / 表情；系统 / 撤回 / 通话跳过），按时间升序，最多 limit 条。
+   * 给复盘 / 研究算「喊单前后群里多热」用（消息数、说话人数、提到该币的条数）；走 sort_seq 索引
+   */
+  readRange(username: string, from: number, to: number, limit = 5000): WeChatMessage[] {
+    const shards = this.findMessageShards(username);
+    try {
+      const grp = isGroup(username);
+      type Raw = { local_id: number; local_type: number | bigint; create_time: number; real_sender_id: number | null; message_content: unknown; WCDB_CT_message_content: number | null };
+      const skip = new Set([50, 10000, 10002]);
+      const out: WeChatMessage[] = [];
+      for (const s of shards) {
+        const name2id = this.loadName2Id(s.db);
+        const rows = s.db.prepare(`SELECT local_id, local_type, create_time, real_sender_id, message_content, WCDB_CT_message_content FROM [${s.table}] WHERE sort_seq >= ? AND sort_seq < ? ORDER BY sort_seq ASC, local_id ASC LIMIT ?`).all(from * 1000, (to + 1) * 1000, limit) as Raw[];
+        for (const row of rows) {
+          const bt = baseType(row.local_type);
+          if (skip.has(bt)) continue;
+          const decoded = decompressContent(row.message_content, row.WCDB_CT_message_content) ?? "";
+          const { sender, text } = this.formatContent(decoded, bt, grp, username, row.real_sender_id, name2id);
+          out.push({ createTime: row.create_time, sender, text: (bt === 1 || bt === 49 ? displayText(text, bt) : `[${TYPE_LABELS[bt] ?? `type=${bt}`}]`).slice(0, 200) });
+        }
+      }
+      out.sort((a, b) => a.createTime - b.createTime);
+      return out.slice(0, limit);
+    } finally {
+      for (const s of shards) s.db.close();
+    }
+  }
+
   /** readAround 的核心：在给定的（已打开的）分片上查。WechatWatcher 用自己常开的句柄调它，免得每次重开+解密所有库。 */
   protected readAroundIn(shards: Array<{ db: DB; table: string; name2id: Map<number, string> }>, username: string, ts: number, before: number, after: number): WeChatMessage[] {
     const grp = isGroup(username);
