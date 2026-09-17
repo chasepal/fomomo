@@ -196,15 +196,27 @@ type FullInfo = {
   ath_price?: unknown;
   ath_market_cap?: unknown;
   ath_ts?: unknown;
+  creation_timestamp?: unknown;
+  open_timestamp?: unknown;
+  migrated_timestamp?: unknown;
 };
 
+export interface TokenFullInfo {
+  links: Links;
+  ath: Ath | null;
+  /** 代币创建时刻（秒）；接口给 0 / 缺 = null */
+  createdAt: number | null;
+  /** 迁出 / 开盘时刻（秒）：`open_timestamp`，缺了退到 `migrated_timestamp`；还在内盘时两者都是 0 → null */
+  openAt: number | null;
+}
+
 /**
- * POST /mrwapi/v1/multi_token_full_info：社交链接 + ATH。
+ * POST /mrwapi/v1/multi_token_full_info：社交链接 + ATH + 创建 / 开盘时刻。
  * `link.twitter_username` 可能是用户名（`HuggingFaceXYZ`）也可能是推文路径（`user/status/123`），统一拼成 x.com URL。
  */
-export async function fullInfo(bridge: Bridge, chain: string, addresses: string[]): Promise<Map<string, { links: Links; ath: Ath | null }>> {
+export async function fullInfo(bridge: Bridge, chain: string, addresses: string[]): Promise<Map<string, TokenFullInfo>> {
   const data = (await gmgnJson<FullInfo[] | null>(bridge, "/mrwapi/v1/multi_token_full_info", "POST", { chain, addresses })) ?? [];
-  const out = new Map<string, { links: Links; ath: Ath | null }>();
+  const out = new Map<string, TokenFullInfo>();
   for (const d of data) {
     const a = d.address?.toLowerCase();
     if (!a) continue;
@@ -216,7 +228,12 @@ export async function fullInfo(bridge: Bridge, chain: string, addresses: string[
     const price = positive(d.ath_price);
     const mc = positive(d.ath_market_cap);
     const ts = positive(d.ath_ts);
-    out.set(a, { links, ath: price !== undefined && mc !== undefined && ts !== undefined ? { price, mc, time: ts } : null });
+    out.set(a, {
+      links,
+      ath: price !== undefined && mc !== undefined && ts !== undefined ? { price, mc, time: ts } : null,
+      createdAt: positive(d.creation_timestamp) ?? null,
+      openAt: positive(d.open_timestamp) ?? positive(d.migrated_timestamp) ?? null,
+    });
   }
   return out;
 }

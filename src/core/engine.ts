@@ -1,7 +1,8 @@
 import { Chain, Dex } from "./dex.js";
 import { Erc20, type Erc20Verdict } from "./erc20.js";
 import { FomoService } from "./fomo.js";
-import { GMGN_BATCH, GmgnError, RESOLUTION_SEC, candles, communityMessages, fullInfo, linkPreview, tokenInfo, topHolders, tweets, userProfile, type Candle, type GmgnCallsPage } from "./gmgn.js";
+import { GMGN_BATCH, GmgnError, RESOLUTION_SEC, candles, communityMessages, fullInfo, linkPreview, tokenInfo, topHolders, tweets, userProfile, type Candle, type GmgnCallsPage, type GmgnHoldersPage } from "./gmgn.js";
+import { CUT_SEC, SNAPSHOT_V, thin, topSummary, type CutSnapshot, type SocialEventRow } from "./analysis.js";
 import { GmgnWs, type Trade } from "./gmgnws.js";
 import type { Bridge } from "./rpc.js";
 import type { Store } from "./store.js";
@@ -29,7 +30,7 @@ const GUESS_CHAINS = ["robinhood", "bsc"];
 /** 行情源都查不到的 0x 地址：链上 ERC20 探测（erc20.ts）的确定结论缓存多久；unknown（节点抽风 / 限流）多久后重试 */
 export const ERC20_TTL = 10 * 60;
 const ERC20_UNKNOWN_TTL = 60;
-/** 同时在飞的 ERC20 探测数（每个探测只读最多五条链） */
+/** 同时在飞的 ERC20 探测数（每个探测只读最多六条链） */
 const ERC20_CONCURRENCY = 3;
 
 /** gmgn 链 slug → fomo.family 路由段（fomo 前端 `chains-v2` 的 chainId→slug 表：solana/base/monad/bnb/ethereum/robinhood）。
@@ -61,14 +62,6 @@ function merged(old: Market | null, n: Market): Market {
   m.source = n.source;
   m.updatedAt = n.updatedAt;
   return m;
-}
-
-/** 等间隔抽 n 个点（首尾保留） */
-export function thin<T>(xs: T[], n: number): T[] {
-  if (xs.length <= n) return xs;
-  const out: T[] = [];
-  for (let i = 0; i < n; i++) out.push(xs[Math.floor((i * (xs.length - 1)) / (n - 1))]);
-  return out;
 }
 
 function toView(t: TokenState, fomo: FomoView | null, position: TradePosition | null, twitterRequest: TwitterRequest | null): TokenView {
@@ -308,7 +301,7 @@ export class Engine {
     const key = Engine.holdingKey(address, chain ?? "?");
     let t = this.holdings.get(key);
     if (t) this.holdings.delete(key); // 重新插到末尾 = 最近用过
-    else t = { address: Engine.norm(address), chainHint: chain, market: null, mentions: [], history: [], links: null, ath: null, profile: null, official: [], tweets: [], tweetsAt: 0 };
+    else t = { address: Engine.norm(address), chainHint: chain, market: null, mentions: [], history: [], links: null, ath: null, createdAt: null, openAt: null, profile: null, official: [], tweets: [], tweetsAt: 0 };
     this.holdings.set(key, t);
     for (const k of this.holdings.keys()) {
       if (this.holdings.size <= Engine.MAX_HOLDINGS) break;
@@ -317,9 +310,96 @@ export class Engine {
     return t;
   }
 
-  /** 只有追踪列表里的代币落库；焦点持仓的一切都留在内存 */
+  /** 只有追踪列表里的代币落库；焦点持仓的一切都留在内存。推文 / 官推变了就顺手追加进 social_event（append-only 副本） */
   private save(t: TokenState): void {
-    if (this.isTracked(t)) this.store.upsertToken(t);
+    if (!this.isTracked(t)) return;
+    this.store.upsertToken(t);
+    this.recordSocial(t);
+  }
+
+  // ---------- 复盘：决策截面 + 社交事件副本（analysis.ts） ----------
+
+  /** 已排定截面的新币 → 计划时刻（t0 + CUT_SEC）；写完 / 放弃就删 */
+  private cutAt = new WeakMap<TokenState, number>();
+  /** 链一到就预拉的 gmgn 前排（截面只读 at ≤ 截面的那份） */
+  private cutTop = new WeakMap<TokenState, { page: GmgnHoldersPage; at: number }>();
+  private socialSig = new WeakMap<TokenState, string>();
+
+  /** live 首喊的新币：CUT_SEC 秒后把当时能看到的东西定格一次。回灌首喊没有截面（当时的行情 / 社交都已不可知） */
+  private scheduleCut(t: TokenState): void {
+    this.cutAt.set(t, now() + CUT_SEC);
+    setTimeout(() => this.writeCut(t), CUT_SEC * 1000).unref();
+  }
+
+  /** 链第一次确认：截面要的 gmgn 前排 + GMGN 喊单首页现在就拉（都进各自缓存并带 at；GMGN 喊单同时落 social_event） */
+  private preloadCut(t: TokenState, chain: string): void {
+    if (!this.cutAt.has(t)) return;
+    void this.fetchGmgnCalls(t, null);
+    topHolders(this.bridge, chain, t.address)
+      .then((page) => this.cutTop.set(t, { page, at: now() }))
+      .catch((e: unknown) => console.error(`[cut] ${t.market?.symbol ?? t.address.slice(0, 10)} top holders: ${e instanceof Error ? e.message : String(e)}`));
+  }
+
+  private writeCut(t: TokenState): void {
+    const scheduledAt = this.cutAt.get(t);
+    if (scheduledAt === undefined) return;
+    this.cutAt.delete(t);
+    const top = this.cutTop.get(t);
+    this.cutTop.delete(t);
+    const label = t.market?.symbol ?? t.address.slice(0, 10);
+    const chain = this.route(t);
+    const m = t.market;
+    if (!this.isTracked(t) || !chain || !m) {
+      console.error(`[cut] ${label} skipped at +${CUT_SEC}s: ${!this.isTracked(t) ? "dropped" : "chain/market unknown"}`);
+      return;
+    }
+    const at = now();
+    const ok = (x: number | undefined | null): x is number => typeof x === "number" && x > 0 && x <= at;
+    const t0 = t.mentions[0]?.time ?? scheduledAt - CUT_SEC;
+    const gc = this.gmgnCalls.get(t);
+    const gcItems = gc && gc.chain === chain && !gc.error && ok(gc.at) ? gc.items.filter((c) => c.ts <= at) : null;
+    const tweetTimes = [...t.official, ...t.tweets].map((x) => x.time).filter((x) => x > 0);
+    const supply = m.mc && m.price ? m.mc / m.price : null;
+    const snap: CutSnapshot = {
+      v: SNAPSHOT_V,
+      market: ok(m.updatedAt) ? { at: m.updatedAt, mc: m.mc ?? null, liq: m.liq ?? null, price: m.price ?? null, holders: m.holders ?? null } : null,
+      twitter: ok(t.tweetsAt)
+        ? {
+            at: t.tweetsAt,
+            has: !!t.links?.twitter,
+            followers: t.profile?.followers ?? null,
+            joined: t.profile?.joined ?? null,
+            verified: t.profile ? t.profile.verified : null,
+            bioHasCa: t.profile ? (t.profile.bio ?? "").toLowerCase().includes(t.address) : null,
+            officialN: t.official.length,
+            communityN: t.tweets.length,
+            earliestTweetTs: tweetTimes.length ? Math.min(...tweetTimes) : null,
+          }
+        : null,
+      gmgnCalls: gcItems ? { at: gc!.at, n: gcItems.length, kolN: gcItems.filter((c) => c.kol).length, maxFollowers: gcItems.length ? Math.max(...gcItems.map((c) => c.followers)) : null } : null,
+      fomo: this.fomo.cut(t.address, chain, at),
+      top: top && ok(top.at) ? topSummary(top.page, supply, top.at) : null,
+    };
+    const wrote = this.store.insertSnapshot({ chain, address: t.address, kind: "cut", t0, scheduledAt, observedAt: at, v: SNAPSHOT_V, json: snap });
+    console.error(`[cut] ${label} ${chain} +${at - t0}s ${wrote ? "saved" : "exists"} market=${snap.market ? "y" : "n"} twitter=${snap.twitter ? "y" : "n"} gmgn=${snap.gmgnCalls ? snap.gmgnCalls.n : "-"} fomo=${snap.fomo ? "y" : "n"} top=${snap.top ? snap.top.rows : "-"}`);
+  }
+
+  /** tokens.official / tweets 是覆盖式的：每次它们变了就把当前这批追加进 social_event（OR IGNORE；同推文社区→官方只升级 kind） */
+  private recordSocial(t: TokenState): void {
+    const chain = this.route(t);
+    if (!chain || !t.tweetsAt) return;
+    const sig = `${t.tweetsAt}:${t.official.length}:${t.tweets.length}:${t.official[0]?.id ?? ""}`;
+    if (this.socialSig.get(t) === sig) return;
+    this.socialSig.set(t, sig);
+    const at = now();
+    const row = (x: Tweet, kind: SocialEventRow["kind"]): SocialEventRow => ({ chain, address: t.address, ref: `tw:${x.id}`, kind, ts: x.time, observedAt: at, actor: x.user.screen, followers: x.user.followers, kol: false, text: x.text });
+    this.store.insertSocialEvents([...t.tweets.map((x) => row(x, "community_tweet")), ...t.official.map((x) => row(x, "official_tweet"))]);
+  }
+
+  private recordGmgnCalls(t: TokenState, chain: string, items: GmgnCall[]): void {
+    if (!this.isTracked(t) || !items.length) return;
+    const at = now();
+    this.store.insertSocialEvents(items.map((c): SocialEventRow => ({ chain, address: t.address, ref: `gm:${c.id}`, kind: "gmgn_call", ts: c.ts, observedAt: at, actor: c.handle, followers: c.followers, kol: c.kol, text: c.text })));
   }
 
   /** gmgn / Dex 批量结果按小写地址归一；按请求时的写法（Solana mint 区分大小写）回填。返回成功 apply 的地址 */
@@ -374,7 +454,7 @@ export class Engine {
       this.scheduleState();
       return;
     }
-    const t: TokenState = { address, chainHint, market: null, mentions: [mention], history: [], links: null, ath: null, profile: null, official: [], tweets: [], tweetsAt: 0 };
+    const t: TokenState = { address, chainHint, market: null, mentions: [mention], history: [], links: null, ath: null, createdAt: null, openAt: null, profile: null, official: [], tweets: [], tweetsAt: 0 };
     if (backfill) {
       // 回灌按时间插入（分片间不保证全局有序），不弹
       const at = this.tokens.findIndex((x) => (x.mentions[0]?.time ?? 0) < mention.time);
@@ -387,7 +467,10 @@ export class Engine {
     this.store.upsertToken(t);
     this.store.insertCall(address, mention);
     this.scheduleState();
-    if (!backfill) this.emitAfterState({ t: "new_token", address });
+    if (!backfill) {
+      this.emitAfterState({ t: "new_token", address });
+      this.scheduleCut(t);
+    }
     this.enqueue(address, chainHint);
     this.fomo.adopt(address);
     // 微信本地语境预取；飞书由监控消息窗口主动保存，不额外批量发网络请求。
@@ -627,12 +710,13 @@ export class Engine {
         this.gmgnCallsFocused(t); // GMGN喊单 接口按链路由，链到了才能拉
         console.error(`[gmgn-ws] watch ${t.market.symbol ?? t.address.slice(0, 10)} chain=${t.market.chain} (late)`);
       } else if (this.visible.has(t.address)) this.fomo.visibleChanged([...this.visible]); // 主面板行的链迟到：重踢前排队列
+      this.preloadCut(t, t.market.chain);
     }
     if (m.price !== undefined && t.history[t.history.length - 1]?.price !== m.price) {
       const s = { time: now(), price: m.price, mc: t.market.mc };
       t.history.push(s);
       if (t.history.length > MAX_HISTORY) t.history = thin(t.history, MAX_HISTORY);
-      if (this.isTracked(t)) this.store.insertSample(t.address, s, t.market.mc ?? null, t.market.liq ?? null);
+      if (this.isTracked(t)) this.store.insertSample(t.address, s, t.market.mc ?? null, t.market.liq ?? null, "live");
     }
     this.fillMentionPrices(t);
     this.save(t);
@@ -671,6 +755,8 @@ export class Engine {
       if (got) {
         t.links = Object.keys(got.links).length ? got.links : t.links;
         t.ath = got.ath ?? t.ath;
+        t.createdAt ??= got.createdAt;
+        t.openAt ??= got.openAt;
         this.save(t);
         this.scheduleState();
       }
@@ -1160,6 +1246,7 @@ export class Engine {
       // 有重叠的首页重拉（60s TTL）→ 沿用原来的游标与结论（翻到底后首页自带 has_more 不能再点亮「加载更多」）
       const adopt = cursor !== null || base.at === 0 || (overlap === 0 && page.hasMore);
       this.gmgnCalls.set(t, { chain, items, next: adopt ? page.next : base.next, hasNext: adopt ? page.hasMore : base.hasNext, at: now(), error: null });
+      this.recordGmgnCalls(t, chain, page.items);
     } finally {
       this.gmgnCallsInflight.delete(t);
       if (this.focused === t) this.emitGmgnCalls(t, false);
@@ -1262,7 +1349,7 @@ export class Engine {
         .filter((k) => k.time >= firstCall - step && k.time < until)
         .map((k) => ({ time: k.time + step, price: k.close, mc: supply !== undefined ? k.close * supply : undefined }));
       if (seed.length > 0) {
-        for (const s of seed) this.store.insertSample(t.address, s, s.mc ?? null, null);
+        for (const s of seed) this.store.insertSample(t.address, s, s.mc ?? null, null, "candle");
         t.history = [...seed, ...t.history];
         if (t.history.length > MAX_HISTORY) t.history = thin(t.history, MAX_HISTORY);
         changed = true;

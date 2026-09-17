@@ -4,7 +4,9 @@ import Database from "better-sqlite3-multiple-ciphers";
 import type { Database as DB } from "better-sqlite3-multiple-ciphers";
 import { DATA_DIR } from "../config.js";
 import { DEFAULT_SETTINGS, NATIVE_SYMBOLS, type Ath, type BuyPresets, type FomoActivity, type Links, type Market, type Mention, type Sample, type Settings, type TokenState, type TradeEvent, type TradeSettings, type Tweet, type TwitterUser } from "./types.js";
-import { thin } from "./engine.js";
+import { parseCallCard } from "./callcard.js";
+import { parseTwitterLink } from "./twitter.js";
+import { HORIZON_SEC, TIMELINE_BACK_SEC, thin, type AnalysisInput, type AnalysisToken, type CutSnapshot, type PriorCall, type SeriesPoint, type SnapshotRow, type SocialEventRow } from "./analysis.js";
 
 /** 快捷额：买入按原生币分组、缺的组补默认；旧库存的是 USD 数组（2026-09-11 前）→ 整个买入段回默认 */
 function mergePresets(saved: unknown): TradeSettings["presets"] {
@@ -44,7 +46,7 @@ export class Store {
         address TEXT PRIMARY KEY, chain TEXT, symbol TEXT, name TEXT, logo TEXT,
         first_seen REAL NOT NULL,
         price REAL, mc REAL, liq REAL, holders INTEGER, source TEXT, updated_at REAL,
-        links TEXT, ath TEXT, profile TEXT, official TEXT, tweets TEXT, tweets_at REAL
+        links TEXT, ath TEXT, profile TEXT, official TEXT, tweets TEXT, tweets_at REAL, created_at REAL, open_at REAL
       );
       CREATE TABLE IF NOT EXISTS calls(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,10 +85,27 @@ export class Store {
         in_raw TEXT, out_raw TEXT, decimals INTEGER, symbol TEXT
       );
       CREATE INDEX IF NOT EXISTS trade_address ON trade(address, ts);
+      -- 「首喊后 24h 表现复盘」（analysis.ts）：决策截面 = 首喊后 CUT_SEC 秒引擎写一次、之后不改（INSERT OR IGNORE）；json 见 CutSnapshot。
+      -- 与旧表不同按 (chain, address) 键：同地址换链的币在分析里隔离，不能拿 A 链的基准除 B 链的峰值
+      CREATE TABLE IF NOT EXISTS token_snapshot(
+        chain TEXT NOT NULL, address TEXT NOT NULL, kind TEXT NOT NULL,
+        t0 REAL NOT NULL, scheduled_at REAL NOT NULL, observed_at REAL NOT NULL, v INTEGER NOT NULL, json TEXT NOT NULL,
+        PRIMARY KEY(chain, address, kind)
+      );
+      -- 推文 / GMGN 喊单的 append-only 副本（tokens.official / tweets 每次刷新整体覆盖，历史会丢）；ref = tw:<tweet_id> | gm:<ulid>
+      CREATE TABLE IF NOT EXISTS social_event(
+        chain TEXT NOT NULL, address TEXT NOT NULL, ref TEXT NOT NULL, kind TEXT NOT NULL,
+        ts REAL NOT NULL, observed_at REAL NOT NULL, actor TEXT NOT NULL, followers INTEGER, kol INTEGER NOT NULL DEFAULT 0, text TEXT,
+        PRIMARY KEY(chain, address, ref)
+      );
+      CREATE INDEX IF NOT EXISTS social_event_ts ON social_event(address, ts);
+      CREATE INDEX IF NOT EXISTS calls_ts ON calls(ts);
     `);
     // 老库补列（sqlite 没有 ADD COLUMN IF NOT EXISTS）
-    this.addColumns("tokens", { logo: "TEXT", links: "TEXT", ath: "TEXT", profile: "TEXT", official: "TEXT", tweets: "TEXT", tweets_at: "REAL", erc20_check: "TEXT" });
+    this.addColumns("tokens", { logo: "TEXT", links: "TEXT", ath: "TEXT", profile: "TEXT", official: "TEXT", tweets: "TEXT", tweets_at: "REAL", erc20_check: "TEXT", created_at: "REAL", open_at: "REAL" });
     this.addColumns("calls", { grp: "TEXT" });
+    // 采样来源：live 实时行情 / candle 蜡烛回补；2026-09-13 前的老行为 NULL = 不知道（分析里一律 unknown，不按 liq 为空补判）
+    this.addColumns("samples", { src: "TEXT" });
     this.migrateCallGroups();
   }
 
@@ -177,8 +196,8 @@ export class Store {
     this.db
       .prepare(
         `
-      INSERT INTO tokens(address, chain, symbol, name, logo, first_seen, price, mc, liq, holders, source, updated_at, links, ath, profile, official, tweets, tweets_at, erc20_check)
-      VALUES(@address, @chain, @symbol, @name, @logo, @first_seen, @price, @mc, @liq, @holders, @source, @updated_at, @links, @ath, @profile, @official, @tweets, @tweets_at, @erc20_check)
+      INSERT INTO tokens(address, chain, symbol, name, logo, first_seen, price, mc, liq, holders, source, updated_at, links, ath, profile, official, tweets, tweets_at, erc20_check, created_at, open_at)
+      VALUES(@address, @chain, @symbol, @name, @logo, @first_seen, @price, @mc, @liq, @holders, @source, @updated_at, @links, @ath, @profile, @official, @tweets, @tweets_at, @erc20_check, @created_at, @open_at)
       ON CONFLICT(address) DO UPDATE SET
         chain=COALESCE(excluded.chain, chain), symbol=COALESCE(excluded.symbol, symbol), name=COALESCE(excluded.name, name), logo=COALESCE(excluded.logo, logo),
         first_seen=MIN(first_seen, excluded.first_seen),
@@ -187,7 +206,8 @@ export class Store {
         updated_at=COALESCE(excluded.updated_at, updated_at),
         links=COALESCE(excluded.links, links), ath=COALESCE(excluded.ath, ath), profile=COALESCE(excluded.profile, profile), official=COALESCE(excluded.official, official),
         tweets=COALESCE(excluded.tweets, tweets), tweets_at=COALESCE(excluded.tweets_at, tweets_at),
-        erc20_check=excluded.erc20_check
+        erc20_check=excluded.erc20_check,
+        created_at=COALESCE(excluded.created_at, created_at), open_at=COALESCE(excluded.open_at, open_at)
     `,
       )
       .run({
@@ -211,6 +231,8 @@ export class Store {
         tweets_at: t.tweetsAt || null,
         // 不 COALESCE：行情到达后结论作废，要能把列清成 NULL
         erc20_check: t.erc20Check ? JSON.stringify(t.erc20Check) : null,
+        created_at: t.createdAt,
+        open_at: t.openAt,
       });
   }
 
@@ -226,8 +248,93 @@ export class Store {
       .run(c.price ?? null, c.mc ?? null, c.approx ? 1 : 0, address, c.sender, c.time, c.group);
   }
 
-  insertSample(address: string, s: Sample, mc: number | null, liq: number | null): void {
-    this.db.prepare(`INSERT OR IGNORE INTO samples(address, ts, price, mc, liq) VALUES(?,?,?,?,?)`).run(address, s.time, s.price, mc, liq);
+  insertSample(address: string, s: Sample, mc: number | null, liq: number | null, src: "live" | "candle"): void {
+    this.db.prepare(`INSERT OR IGNORE INTO samples(address, ts, price, mc, liq, src) VALUES(?,?,?,?,?,?)`).run(address, s.time, s.price, mc, liq, src);
+  }
+
+  // ---------- 复盘：决策截面 / 社交事件 ----------
+
+  /** 先写的截面不被覆盖（回灌后发现更早的首喊也不改）；返回是否真的写入 */
+  insertSnapshot(r: SnapshotRow): boolean {
+    const res = this.db
+      .prepare(`INSERT OR IGNORE INTO token_snapshot(chain, address, kind, t0, scheduled_at, observed_at, v, json) VALUES(?,?,?,?,?,?,?,?)`)
+      .run(r.chain, r.address, r.kind, r.t0, r.scheduledAt, r.observedAt, r.v, JSON.stringify(r.json));
+    return res.changes > 0;
+  }
+
+  /** 同一条推文先按社区推抓到、后来认出是官推 → kind 升级为 official_tweet；其余字段保留首次观测 */
+  insertSocialEvents(rows: SocialEventRow[]): void {
+    if (!rows.length) return;
+    const stmt = this.db.prepare(
+      `INSERT INTO social_event(chain, address, ref, kind, ts, observed_at, actor, followers, kol, text) VALUES(?,?,?,?,?,?,?,?,?,?)
+       ON CONFLICT(chain, address, ref) DO UPDATE SET kind = CASE WHEN excluded.kind = 'official_tweet' THEN excluded.kind ELSE social_event.kind END`,
+    );
+    this.db.transaction(() => {
+      for (const r of rows) stmt.run(r.chain, r.address, r.ref, r.kind, r.ts, r.observedAt, r.actor, r.followers, r.kol ? 1 : 0, r.text);
+    })();
+  }
+
+  /**
+   * `analyze()` 的全部原料：首喊 t0 落在 [sinceT0, now] 的每个币（全库 MIN(calls.ts) 认首喊，不在窗口内重新认）+ 截面 + 结果窗口采样 + 同期喊单 / fomo 活动 / 社交事件，
+   * 以及更长窗口（往前 30 天）里每个币的首喊人与原始 24h 峰倍（喊单人先验）。
+   */
+  analysisInput(sinceT0: number, now: number): AnalysisInput {
+    type Head = { address: string; t0: number; chain: string | null; symbol: string | null; logo: string | null; now_mc: number | null; now_price: number | null; now_liq: number | null; links: string | null; profile: string | null; official: string | null; created_at: number | null; open_at: number | null; sender: string; grp: string; text: string | null; base_mc: number | null; base_price: number | null; approx: number; cut_chain: string | null; cut_t0: number | null; scheduled_at: number | null; observed_at: number | null; v: number | null; json: string | null };
+    const heads = this.db
+      .prepare(
+        `WITH first AS (SELECT address, MIN(ts) t0 FROM calls GROUP BY address HAVING MIN(ts) >= ? AND MIN(ts) <= ?)
+         SELECT f.address, f.t0, t.chain, t.symbol, t.logo, t.mc now_mc, t.price now_price, t.liq now_liq, t.links, t.profile, t.official, t.created_at, t.open_at,
+                c.sender, c.grp, c.text, c.mc base_mc, c.price base_price, c.approx,
+                s.chain cut_chain, s.t0 cut_t0, s.scheduled_at, s.observed_at, s.v, s.json
+         FROM first f
+         LEFT JOIN tokens t ON t.address = f.address
+         JOIN calls c ON c.id = (SELECT MIN(id) FROM calls WHERE address = f.address AND ts = f.t0)
+         LEFT JOIN token_snapshot s ON s.address = f.address AND s.kind = 'cut'
+         ORDER BY f.t0 DESC`,
+      )
+      .all(sinceT0, now) as Head[];
+    const series = this.db.prepare(`SELECT ts, mc, price, liq, src FROM samples WHERE address = ? AND ts >= ? AND ts <= ? AND mc IS NOT NULL ORDER BY ts`);
+    // 首喊那条的上下文：机器人卡片在喊单后几秒回，是喊单那一刻可知的持有人 / 成交量 / 几个群在聊
+    const context = this.db.prepare(`SELECT lines FROM call_context WHERE address = ? AND sender = ? AND ts = ? LIMIT 1`);
+    const calls = this.db.prepare(`SELECT id, sender, grp, ts, text FROM calls WHERE address = ? AND ts >= ? AND ts <= ? ORDER BY ts`);
+    const fomo = this.db.prepare(`SELECT handle, kind, usd, ts, comment FROM fomo_activity WHERE address = ? AND ts >= ? AND ts <= ? ORDER BY ts`);
+    const social = this.db.prepare(`SELECT chain, address, ref, kind, ts, observed_at, actor, followers, kol, text FROM social_event WHERE address = ? AND ts >= ? AND ts <= ? ORDER BY ts`);
+    const tokens: AnalysisToken[] = heads.map((h) => {
+      const cut: SnapshotRow | null = h.cut_chain && h.json
+        ? { chain: h.cut_chain, address: h.address, kind: "cut", t0: h.cut_t0!, scheduledAt: h.scheduled_at!, observedAt: h.observed_at!, v: h.v!, json: JSON.parse(h.json) as CutSnapshot }
+        : null;
+      const from = cut ? cut.observedAt : h.t0;
+      const links = h.links ? (JSON.parse(h.links) as Links) : null;
+      const profile = h.profile ? (JSON.parse(h.profile) as TwitterUser) : null;
+      // 链接指向一条推文（/status/）时，被链接那条是 official[0]（engine.refreshOfficial 的 linkPreview）；按 id 对上才算
+      const statusId = links?.twitter ? parseTwitterLink(links.twitter)?.statusId : undefined;
+      const linkedTweet = statusId && h.official ? ((JSON.parse(h.official) as Tweet[]).find((x) => x.id === statusId) ?? null) : null;
+      type SocialRaw = { chain: string; address: string; ref: string; kind: SocialEventRow["kind"]; ts: number; observed_at: number; actor: string; followers: number | null; kol: number; text: string | null };
+      return {
+        address: h.address, chain: h.chain, symbol: h.symbol, logo: h.logo, t0: h.t0,
+        first: { sender: h.sender, grp: h.grp, text: h.text, mc: h.base_mc, price: h.base_price, approx: h.approx === 1 },
+        nowMc: h.now_mc, nowPrice: h.now_price, nowLiq: h.now_liq, cut,
+        card: (() => { const row = context.get(h.address, h.sender, h.t0) as { lines: string } | undefined; return row ? parseCallCard(JSON.parse(row.lines) as Array<{ time: number; text: string }>, h.t0) : null; })(),
+        legacy: { hasTwitter: links ? !!links.twitter : null, joined: profile?.joined ?? null, isTweet: !!statusId, tweetAt: linkedTweet?.time ?? null, followers: profile?.followers ?? null },
+        createdAt: h.created_at, openAt: h.open_at,
+        series: series.all(h.address, from, from + HORIZON_SEC) as SeriesPoint[],
+        calls: calls.all(h.address, h.t0, h.t0 + HORIZON_SEC) as AnalysisToken["calls"],
+        fomo: fomo.all(h.address, h.t0 - 86400, h.t0 + HORIZON_SEC) as AnalysisToken["fomo"],
+        social: (social.all(h.address, h.t0 - TIMELINE_BACK_SEC, h.t0 + HORIZON_SEC) as SocialRaw[]).map((r) => ({ chain: r.chain, address: r.address, ref: r.ref, kind: r.kind, ts: r.ts, observedAt: r.observed_at, actor: r.actor, followers: r.followers, kol: r.kol === 1, text: r.text })),
+      };
+    });
+    type PriorRow = { address: string; t0: number; grp: string; sender: string; base_mc: number | null; peak_mc: number | null };
+    const priors = (
+      this.db
+        .prepare(
+          `WITH first AS (SELECT address, MIN(ts) t0 FROM calls GROUP BY address HAVING MIN(ts) >= ?)
+           SELECT f.address, f.t0, c.grp, c.sender, c.mc base_mc,
+                  (SELECT MAX(s.mc) FROM samples s WHERE s.address = f.address AND s.ts >= f.t0 AND s.ts <= f.t0 + ${HORIZON_SEC}) peak_mc
+           FROM first f JOIN calls c ON c.id = (SELECT MIN(id) FROM calls WHERE address = f.address AND ts = f.t0)`,
+        )
+        .all(sinceT0 - 30 * 86400) as PriorRow[]
+    ).map((r): PriorCall => ({ address: r.address, grp: r.grp, sender: r.sender, t0: r.t0, peakX24: r.base_mc && r.base_mc > 0 && r.peak_mc !== null ? r.peak_mc / r.base_mc : null }));
+    return { now, sinceT0, tokens, priors };
   }
 
   // ---------- fomo.family 关注者动向 ----------
@@ -343,6 +450,8 @@ export class Store {
       tweets: string | null;
       tweets_at: number | null;
       erc20_check: string | null;
+      created_at: number | null;
+      open_at: number | null;
     };
     const rows = this.db.prepare(`SELECT * FROM tokens ORDER BY first_seen DESC LIMIT ?`).all(limit) as TokRow[];
     const callStmt = this.db.prepare(`SELECT sender, ts, text, grp, price, mc, approx FROM calls WHERE address=? ORDER BY ts ASC`);
@@ -404,6 +513,8 @@ export class Store {
         history: thin(all, samplesPerToken),
         links: parse<Links>(r.links),
         ath: parse<Ath>(r.ath),
+        createdAt: r.created_at,
+        openAt: r.open_at,
         profile: parse<TwitterUser>(r.profile),
         official: parse<Tweet[]>(r.official) ?? [],
         tweets: parse<Tweet[]>(r.tweets) ?? [],

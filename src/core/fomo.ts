@@ -5,6 +5,7 @@ import type { Bridge } from "./rpc.js";
 import type { FomoActivityRow, Store } from "./store.js";
 import { GMGN_HOLDERS_LIMIT, strictAmount, type GmgnHoldersPage } from "./gmgn.js";
 import type { FomoActivity, FomoFrontRank, FomoMeResult, FomoThesis, FomoThesisError, FomoThesisEvent, FomoTokenParams, FomoTokenResult, FomoView } from "./types.js";
+import type { CutSnapshot } from "./analysis.js";
 
 /**
  * fomo.family「我关注的人买了什么」（决策：docs/adr/0005）。交易半边（报价 / 执行 / 持仓）不在这里：见 `trade.ts`（本地 burner + OKX DEX，docs/adr/0006）。
@@ -259,6 +260,26 @@ export class FomoService {
       holders: h ? h.n : null,
       activity: mine.slice(0, VIEW_MAX).map(({ handle, avatar, kind, usd, mc, ts, comment }): FomoActivity => ({ handle, avatar, kind, usd, mc, ts, comment })),
       frontRank: fr && now() - fr.at <= FRONT_STALE_SEC ? fr : null,
+    };
+  }
+
+  /**
+   * 复盘决策截面（engine.writeCut）：截面时刻 `at` 之前已知的关注者 / 全站信号。未登录 / 该链 fomo 不支持 → null；
+   * 各子项只在其观测时刻 ≤ at 时给出（15s tick / 60s 轮询来不及的就是缺失，不拿之后的值补）
+   */
+  cut(address: string, chain: string, at: number): CutSnapshot["fomo"] {
+    if (!this.me || CHAIN_TO_NETWORK[chain] === undefined) return null;
+    const rows = (this.activity.get(address) ?? []).filter((r) => r.chain === chain && r.ts <= at);
+    const buyers = new Set(rows.filter((r) => r.kind === "buy" || (r.kind === "thesis" && r.usd !== null)).map((r) => r.handle)).size;
+    const h = this.holders.get(address);
+    const key = `${chain}:${address}`;
+    const fr = this.frontRank.get(key);
+    const th = this.thesis.get(key);
+    return {
+      buyers,
+      holders: h && h.at <= at ? { n: h.n, at: h.at } : null,
+      frontRank: fr && fr.at <= at ? { ratio: fr.ratio, at: fr.at } : null,
+      thesis: th && !th.error && th.at > 0 && th.at <= at ? { count: th.count ?? th.items.length, at: th.at } : null,
     };
   }
 

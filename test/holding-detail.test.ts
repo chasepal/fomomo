@@ -126,7 +126,7 @@ try {
   // 相同地址：群聊监听 BSC，但当前持仓详情在 BASE。分页必须继续当前链，不能回到监听币。
   bridge.paginated = true;
   bridge.candleMode = "data";
-  store.upsertToken({ address: OTHER, chainHint: "bsc", market: { chain: "bsc", symbol: "TRACKED", price: 10, mc: 1000, source: "gmgn", updatedAt: clock }, mentions: [], history: [], links: {}, ath: null, profile: null, official: [], tweets: [], tweetsAt: 0 });
+  store.upsertToken({ address: OTHER, chainHint: "bsc", market: { chain: "bsc", symbol: "TRACKED", price: 10, mc: 1000, source: "gmgn", updatedAt: clock }, mentions: [], history: [], links: {}, ath: null, createdAt: null, openAt: null, profile: null, official: [], tweets: [], tweetsAt: 0 });
   engine.start();
   engine.focus(OTHER, "base");
   await until(() => calls().some((event) => event.address === OTHER && event.chain === "base" && event.hasNext), "BASE holding discussion should expose its next page");

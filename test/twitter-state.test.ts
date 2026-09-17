@@ -6,7 +6,7 @@ import type { GmgnFetchParams, GmgnFetchResult, OutEvent, TokenState } from "../
 // Real refresh pipeline and outbound snapshots; only the HTTP/persistence boundaries are fake.
 const token: TokenState = {
   address: "0xdiagnosis", chainHint: "bsc", market: { chain: "bsc", source: "gmgn", updatedAt: 0 },
-  mentions: [], history: [], links: { twitter: "https://x.com/example" }, ath: null,
+  mentions: [], history: [], links: { twitter: "https://x.com/example" }, ath: null, createdAt: null, openAt: null,
   profile: null, official: [], tweets: [], tweetsAt: 0,
 };
 const events: OutEvent[] = [];

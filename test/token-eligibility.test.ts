@@ -49,6 +49,9 @@ class FixtureBridge {
     if (url.pathname === "/mrwapi/v1/multi_token_full_info") return ok([]);
     if (url.pathname === "/vas/api/v1/twitter/token/search") return ok([]);
     if (url.pathname.includes("/token_candles/") || url.pathname.includes("/token_mcap_candles/")) return ok({ list: [] });
+    // live 首喊的新币链一确认，引擎为复盘决策截面预拉前排 + GMGN 喊单首页（analysis.ts）；这里给空页
+    if (url.pathname.startsWith("/vas/api/v1/token_holders/")) return ok({ list: [], next: null });
+    if (url.pathname.includes("/community/messages")) return ok({ messages: [], has_more: false, next_cursor: null });
     this.unexpected.push(params.path);
     throw new Error(`Unexpected fixture request: ${params.path}`);
   }
@@ -212,7 +215,7 @@ try {
 }
 
 // ---- 6. restart: persisted fresh negative stays hidden without a popup or re-probe; expiry re-probes and lets the token recover ----
-store.upsertToken({ address: STORED, chainHint: "bsc", market: null, mentions: [mention(STORED)], history: [], links: null, ath: null, profile: null, official: [], tweets: [], tweetsAt: 0, erc20Check: { verdict: "non-erc20", checkedAt: clock } });
+store.upsertToken({ address: STORED, chainHint: "bsc", market: null, mentions: [mention(STORED)], history: [], links: null, ath: null, createdAt: null, openAt: null, profile: null, official: [], tweets: [], tweetsAt: 0, erc20Check: { verdict: "non-erc20", checkedAt: clock } });
 store.insertCall(STORED, mention(STORED));
 // Invalid verdict and future-dated negative caches must not suppress rows at startup.
 store.db.prepare("UPDATE tokens SET erc20_check=? WHERE address=?").run(JSON.stringify({ verdict: "maybe", checkedAt: clock }), HINTED);
