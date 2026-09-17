@@ -66,6 +66,8 @@ import { BurnerWallet, DEFAULT_RPC, MemoryStore, WALLET_SERVICE, type SolConnect
 
   const p4663 = parseTransaction(await w.signEvmOffline("robinhood", tx1559, 1));
   assert.equal(p4663.chainId, 4663);
+  const p5042 = parseTransaction(await w.signEvmOffline("arc", tx1559, 2));
+  assert.equal(p5042.chainId, 5042, "arc 按 viem 内置链 5042 签");
 }
 
 // ③ Solana：本地构造未签名 v0 交易（给自己转 0）→ sendSol 换 blockhash、签名、发送；反序列化已发字节校验签名有效

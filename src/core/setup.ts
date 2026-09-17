@@ -3,7 +3,7 @@ import { OkxClient, OKX_API_BASE, TRADE_CHAINS } from "./okx.js";
 import { requestJson } from "./proxy.js";
 import { DASHBOARD_PORT, sanitizeTrade } from "./server.js";
 import { Store } from "./store.js";
-import { DEFAULT_SETTINGS, NATIVE_SYMBOL, type Settings, type TradeSettings } from "./types.js";
+import { DEFAULT_SETTINGS, NATIVE_BALANCE_DECIMALS, NATIVE_SYMBOL, type Settings, type TradeSettings } from "./types.js";
 import { BurnerWallet, KeychainStore, type RpcConfig, type SecretStore } from "./wallet.js";
 
 /**
@@ -24,12 +24,12 @@ export async function okxCheck(): Promise<void> {
   }
 }
 
-/** 生成（或显示已有的）burner 热钱包：EVM 一把（六链通用）+ Solana 一把，私钥只在 Keychain */
+/** 生成（或显示已有的）burner 热钱包：EVM 一把（七链通用）+ Solana 一把，私钥只在 Keychain */
 export async function walletInit(store: SecretStore = new KeychainStore(), rpc?: TradeSettings["rpc"]): Promise<void> {
   const existing = await BurnerWallet.load(store, rpcConfig(rpc));
   const w = existing ?? (await BurnerWallet.create(store, rpcConfig(rpc)));
   console.error(existing ? "已有 burner 钱包（不覆盖）：" : "已生成 burner 钱包（私钥在 Keychain service fomomo.wallet）：");
-  console.error(`  EVM    ${w.evmAddress}   （eth / bsc / base / monad / robinhood 通用；往要交易的链上转少量原生币作本金 + gas）`);
+  console.error(`  EVM    ${w.evmAddress}   （eth / bsc / base / monad / robinhood / arc 通用；往要交易的链上转少量原生币作本金 + gas，arc 的原生币是 USDC）`);
   console.error(`  Solana ${w.solAddress}   （转少量 SOL）`);
   console.error("只放打算用来买 meme 的小额资金：这是热钱包，私钥在这台 Mac 上。");
 }
@@ -46,7 +46,7 @@ export async function walletShow(store: SecretStore = new KeychainStore(), opts:
   for (const chain of TRADE_CHAINS) {
     try {
       const bal = await w.nativeBalance(chain);
-      console.error(`  ${chain.padEnd(9)} ${formatUnits(bal, chain === "sol" ? 9 : 18)} ${NATIVE_SYMBOL[chain]}`);
+      console.error(`  ${chain.padEnd(9)} ${formatUnits(bal, NATIVE_BALANCE_DECIMALS[chain])} ${NATIVE_SYMBOL[chain]}`);
     } catch (e) {
       console.error(`  ${chain.padEnd(9)} 查询失败：${e instanceof Error ? e.message : String(e)}`);
     }

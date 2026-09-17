@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mock } from "node:test";
 import type { JsonResponse } from "../src/core/proxy.js";
-import { OkxClient, OkxError, OKX_API_BASE, type OkxClientOptions } from "../src/core/okx.js";
+import { NATIVE_SWAP_DECIMALS, NATIVE_TOKEN, OkxClient, OkxError, OKX_API_BASE, type OkxClientOptions } from "../src/core/okx.js";
 
 // 全部走注入的假 request，不发真实请求。关注点：只打固定端点、不带凭据、只发 OKX 原样参数（不附加自有字段）、错误码归类、响应解析、串行限速。
 
@@ -155,6 +155,12 @@ const swapReq = { chain: "eth" as const, fromToken: NATIVE, toToken: MEME, amoun
   assert.equal(calls[0]?.url.searchParams.get("approveAmount"), "123");
   const sc = await client([ok({ chainIndex: "143", chainName: "Monad", dexTokenApproveAddress: "0xf534" })], []).supportedChain("monad");
   assert.deepEqual(sc, { chainName: "Monad", dexTokenApproveAddress: "0xf534" });
+  // arc：chainIndex 5042；「原生币」是 USDC 预编译 0x3600…（6 位口径），不是 0xeeee…（OKX 在 Arc 上不认）
+  const arcCalls: Call[] = [];
+  await client([ok(ROUTE)], arcCalls).quote({ chain: "arc", fromToken: NATIVE_TOKEN.arc, toToken: MEME, amountRaw: 1_000_000n });
+  assert.equal(arcCalls[0]?.url.searchParams.get("chainIndex"), "5042");
+  assert.equal(arcCalls[0]?.url.searchParams.get("fromTokenAddress"), "0x3600000000000000000000000000000000000000");
+  assert.equal(NATIVE_SWAP_DECIMALS.arc, 6, "arc 报 OKX 的 USDC 数量是 6 位");
 }
 
 // ⑤ 发送间隔 ≥ minIntervalMs，但响应可以重叠：假时钟（mock.timers 接管 setTimeout + Date），三个并发请求按到达顺序占槽 T0 / T0+I / T0+2I，

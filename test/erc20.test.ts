@@ -1,5 +1,5 @@
 /**
- * ERC20 三态探测契约（本地假 RPC，无外网）：EOA 五链全否定才是 non-erc20、全 0 的合法字也是 erc20、NFT（没 allowance）挡在门外、
+ * ERC20 三态探测契约（本地假 RPC，无外网）：EOA 六链全否定才是 non-erc20、全 0 的合法字也是 erc20、NFT（没 allowance）挡在门外、
  * 任何一条链拿不到（HTTP/限流/泛 -32000/信封不对/chainId 不符）都只能是 unknown、hint 先探但不权威、不支持的 hint 直接 unknown 不发请求、
  * decimals/name/symbol 从不查询。运行：node --import tsx test/erc20.test.ts
  */
@@ -8,7 +8,7 @@ import http from "node:http";
 import { Erc20 } from "../src/core/erc20.js";
 
 const TOKEN = "0x37b79b4b0b53dba9a261a347b1ef3741fa1d3e54";
-const CHAIN_IDS: Record<string, number> = { eth: 1, bsc: 56, base: 8453, monad: 143, robinhood: 4663 };
+const CHAIN_IDS: Record<string, number> = { eth: 1, bsc: 56, base: 8453, monad: 143, robinhood: 4663, arc: 5042 };
 const SEL_BALANCE_OF = "0x70a08231";
 const SEL_TOTAL_SUPPLY = "0x18160ddd";
 const SEL_ALLOWANCE = "0xdd62ed3e";
@@ -68,11 +68,11 @@ const mix = (base: typeof respond, per: Record<string, typeof respond>): typeof 
 const chainsProbed = () => [...new Set(seen.map((s) => s.chain))];
 
 try {
-  // ---- EOA：五链全否定 → non-erc20；getCode 先行，EOA 不发 eth_call；hint 先探 ----
+  // ---- EOA：六链全否定 → non-erc20；getCode 先行，EOA 不发 eth_call；hint 先探 ----
   respond = eoaChain;
   assert.equal(await check("bsc"), "non-erc20");
-  assert.deepEqual(chainsProbed(), ["bsc", "eth", "base", "monad", "robinhood"], "hint first, then every other supported chain");
-  assert.equal(seen.filter((s) => s.body.method === "eth_getCode").length, 5);
+  assert.deepEqual(chainsProbed(), ["bsc", "eth", "base", "monad", "robinhood", "arc"], "hint first, then every other supported chain");
+  assert.equal(seen.filter((s) => s.body.method === "eth_getCode").length, 6);
   assert.equal(seen.filter((s) => s.body.method === "eth_call").length, 0, "EOA skips eth_call");
 
   // ---- 合法的全 0 ERC20（刚部署的空币）：hint 命中即停，不再问其它链 ----
@@ -95,7 +95,7 @@ try {
   assert.equal(evmCall(allowance).data.slice(10, 74), owner, "same owner in allowance");
   assert.notEqual(BigInt("0x" + evmCall(allowance).data.slice(74)), 0n, "dummy spender is nonzero");
 
-  // ---- 无 hint：扫全部，靠后的链才是 ERC20 → erc20 ----
+  // ---- 无 hint：扫全部，靠后的链才是 ERC20 → erc20（命中即停，排在后面的 arc 不再问） ----
   seen.length = 0;
   respond = mix(eoaChain, { robinhood: erc20Chain });
   assert.equal(await check(null), "erc20");
@@ -132,7 +132,7 @@ try {
   };
   assert.equal(await check("monad"), "non-erc20");
 
-  // ---- 局部故障只能是 unknown：四链 EOA + 一链拿不到 ----
+  // ---- 局部故障只能是 unknown：五链 EOA + 一链拿不到 ----
   const down: Record<string, typeof respond> = {
     "HTTP 502": () => ({ status: 502, body: { jsonrpc: "2.0", id: 1, result: "0x" } }),
     "HTTP 429": () => ({ status: 429, body: "rate limited" }),

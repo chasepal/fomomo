@@ -5,13 +5,17 @@ import { NATIVE_SYMBOLS, type NativeSymbol } from "./types.js";
  * 原生币（ETH / BNB / SOL / MON）美元价：后台每 60s 从 DexScreener 拉一次包装币的价（`Dex.batch`，和 engine 定链同一条接口），只做显示与限额校验。
  * 报价 / 下单路径**不等它**——买入按原生币数量计价，没有价也能报价、能下单（2026-09-11 用户定：估值不影响展示速度）。
  * 拉失败保留旧值；从未拉到 → null（UI 显示「—」，买入限额校验拒单）。4 请求 / 分钟，DexScreener 300/min 限额忽略不计。
+ * USDC（arc 的 gas 币）不在包装币表里：美元价恒为 1，不发请求（adr/0015）。
  */
-export const WRAPPED_NATIVE: Record<NativeSymbol, { dexChain: string; address: string }> = {
+export const WRAPPED_NATIVE: Record<Exclude<NativeSymbol, "USDC">, { dexChain: string; address: string }> = {
   ETH: { dexChain: "ethereum", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
   BNB: { dexChain: "bsc", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c" },
   SOL: { dexChain: "solana", address: "So11111111111111111111111111111111111111112" },
   MON: { dexChain: "monad", address: "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A" },
 };
+/** 美元稳定币：不拉价，恒 1 */
+const FIXED_USD: Partial<Record<NativeSymbol, number>> = { USDC: 1 };
+const FETCHED_SYMBOLS = NATIVE_SYMBOLS.filter((s): s is Exclude<NativeSymbol, "USDC"> => !(s in FIXED_USD));
 
 export interface NativePrices {
   /** 最近一次拉到的美元价；从未拉到 → null */
@@ -48,7 +52,7 @@ export class NativePriceFeed implements NativePrices {
   }
 
   get(symbol: NativeSymbol): number | null {
-    return this.prices.get(symbol) ?? null;
+    return FIXED_USD[symbol] ?? this.prices.get(symbol) ?? null;
   }
 
   /** 立刻拉一轮（不等），之后按间隔 */
@@ -62,13 +66,13 @@ export class NativePriceFeed implements NativePrices {
     this.timer = undefined;
   }
 
-  /** 四个币并行；上一轮没回来就跳过这轮 */
+  /** 四个要拉价的币并行；上一轮没回来就跳过这轮 */
   async refresh(): Promise<void> {
     if (this.busy) return;
     this.busy = true;
     try {
       const results = await Promise.all(
-        NATIVE_SYMBOLS.map(async (s) => {
+        FETCHED_SYMBOLS.map(async (s) => {
           const { dexChain, address } = WRAPPED_NATIVE[s];
           try {
             return [s, await this.fetch(dexChain, address)] as const;

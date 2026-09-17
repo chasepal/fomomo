@@ -7,7 +7,7 @@
 const EVM_RE = /0x[a-fA-F0-9]{40}/g;
 
 /** 从 URL 路径猜链：gmgn.ai/bsc/token/0x… dexscreener.com/bsc/0x… */
-const CHAIN_HINT_RE = /(?:gmgn\.ai|dexscreener\.com|debot\.ai|ave\.ai)\/(?:[a-z_]+\/)?(bsc|eth|base|sol|robinhood)\b/i;
+const CHAIN_HINT_RE = /(?:gmgn\.ai|dexscreener\.com|debot\.ai|ave\.ai)\/(?:[a-z_]+\/)?(bsc|eth|base|sol|robinhood|arc)\b/i;
 
 export interface Extracted {
   addrs: string[];

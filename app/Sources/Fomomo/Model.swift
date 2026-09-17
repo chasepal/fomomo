@@ -328,7 +328,7 @@ struct TradeState: Decodable, Equatable {
         return nil
     }
 
-    /// 六条链：slug（sidecar / OKX 用）、该转的原生币。充值弹窗按这个顺序列（群里实际热度：24h 战况里 RH + BSC + SOL 占九成以上）
+    /// 七条链：slug（sidecar / OKX 用）、该转的原生币（arc 的 gas 币是 USDC）。充值弹窗按这个顺序列（群里实际热度：24h 战况里 RH + BSC + SOL 占九成以上）
     struct ChainInfo: Identifiable {
         let slug: String
         let native: String
@@ -341,6 +341,7 @@ struct TradeState: Decodable, Equatable {
         ChainInfo(slug: "eth", native: "ETH"),
         ChainInfo(slug: "base", native: "ETH"),
         ChainInfo(slug: "monad", native: "MON"),
+        ChainInfo(slug: "arc", native: "USDC"),
     ]
     /// 钱包一把都没有（没生成 / 还没收到 trade_state）
     var hasWallet: Bool { evmAddress != nil || solAddress != nil }

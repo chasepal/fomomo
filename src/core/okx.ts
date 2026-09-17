@@ -7,10 +7,19 @@ import type { TradeChain } from "./types.js";
  * 参数名 / 错误码以 OKX 官方文档为准；不猜文档没写的字段。
  */
 export type { TradeChain };
-export const TRADE_CHAINS: readonly TradeChain[] = ["eth", "bsc", "base", "monad", "robinhood", "sol"];
-const OKX_CHAIN_INDEX: Record<TradeChain, string> = { eth: "1", bsc: "56", base: "8453", monad: "143", robinhood: "4663", sol: "501" };
-const EVM_NATIVE = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-export const NATIVE_TOKEN: Record<TradeChain, string> = { eth: EVM_NATIVE, bsc: EVM_NATIVE, base: EVM_NATIVE, monad: EVM_NATIVE, robinhood: EVM_NATIVE, sol: "11111111111111111111111111111111" };
+export const TRADE_CHAINS: readonly TradeChain[] = ["eth", "bsc", "base", "monad", "robinhood", "arc", "sol"];
+const OKX_CHAIN_INDEX: Record<TradeChain, string> = { eth: "1", bsc: "56", base: "8453", monad: "143", robinhood: "4663", arc: "5042", sol: "501" };
+export const EVM_NATIVE = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+/**
+ * OKX 眼里的「原生币」地址。Arc 例外：gas 币 USDC 在 OKX 只认 ERC-20 预编译 `0x3600…`（`0xeeee…` / `0x0000…` 都报 51001），
+ * 所以 arc 的买入是 ERC-20 → 代币的普通 swap（tx.value=0，先 approve），见 adr/0015。
+ */
+export const NATIVE_TOKEN: Record<TradeChain, string> = { eth: EVM_NATIVE, bsc: EVM_NATIVE, base: EVM_NATIVE, monad: EVM_NATIVE, robinhood: EVM_NATIVE, arc: "0x3600000000000000000000000000000000000000", sol: "11111111111111111111111111111111" };
+/**
+ * `NATIVE_TOKEN` 在 OKX 报价 / 下单 / approve 里的**数量口径**小数位：amount、toTokenAmount、approveAmount 都按它。
+ * arc 是 6（0x3600 预编译的 ERC-20 口径），余额口径（types.ts `NATIVE_BALANCE_DECIMALS`）是 18，差 10¹²。
+ */
+export const NATIVE_SWAP_DECIMALS: Record<TradeChain, number> = { eth: 18, bsc: 18, base: 18, monad: 18, robinhood: 18, arc: 6, sol: 9 };
 
 /** 唯一的 OKX 出口。改地址 = 改这里发新客户端 */
 export const OKX_API_BASE = "https://fomomo-okx-proxy.boxchen.workers.dev";

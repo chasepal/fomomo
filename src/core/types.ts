@@ -95,6 +95,9 @@ export interface TokenState {
   history: Sample[]; // 自首次喊单起的价格采样（内存里最多 MAX_HISTORY 点，全量在 Store）
   links: Links | null;
   ath: Ath | null;
+  /** 代币创建 / 迁出（开盘）时刻（gmgn full_info；秒）。拿到一次就不再覆盖；不知道 / 还在内盘 = null */
+  createdAt: number | null;
+  openAt: number | null;
   /** 官方推特账号资料（gmgn 悬浮卡那种：头像/名/简介/粉丝/注册时间） */
   profile: TwitterUser | null;
   /** 官方推特内容：links.twitter 指向的推文，或该账号本人提到该币的推文 */
@@ -179,11 +182,16 @@ export interface FomoFrontRank {
 
 // ---------- 一键买卖（trade.ts：本地 burner 热钱包签名 + OKX DEX 路由） ----------
 
-export type TradeChain = "eth" | "bsc" | "base" | "monad" | "robinhood" | "sol";
-/** 原生币符号：买入按它计价、快捷额按它分组（eth/base/robinhood 都是 ETH） */
-export type NativeSymbol = "ETH" | "BNB" | "SOL" | "MON";
-export const NATIVE_SYMBOLS: readonly NativeSymbol[] = ["ETH", "BNB", "SOL", "MON"];
-export const NATIVE_SYMBOL: Record<TradeChain, NativeSymbol> = { eth: "ETH", bsc: "BNB", base: "ETH", monad: "MON", robinhood: "ETH", sol: "SOL" };
+export type TradeChain = "eth" | "bsc" | "base" | "monad" | "robinhood" | "arc" | "sol";
+/** 原生币符号：买入按它计价、快捷额按它分组（eth/base/robinhood 都是 ETH；arc 的 gas 币是 USDC，见 adr/0015） */
+export type NativeSymbol = "ETH" | "BNB" | "SOL" | "MON" | "USDC";
+export const NATIVE_SYMBOLS: readonly NativeSymbol[] = ["ETH", "BNB", "SOL", "MON", "USDC"];
+export const NATIVE_SYMBOL: Record<TradeChain, NativeSymbol> = { eth: "ETH", bsc: "BNB", base: "ETH", monad: "MON", robinhood: "ETH", arc: "USDC", sol: "SOL" };
+/**
+ * 原生币**余额口径**小数位：`eth_getBalance` / `msg.value` / gas 计价用的，EVM 一律 18（arc 的 USDC 也是 18——链层按 wei 记账），sol 9。
+ * 报 OKX 的数量另有一张表（okx.ts `NATIVE_SWAP_DECIMALS`）：arc 那边是 6，两者差 10¹²，绝不能混用（adr/0015）。
+ */
+export const NATIVE_BALANCE_DECIMALS: Record<TradeChain, number> = { eth: 18, bsc: 18, base: 18, monad: 18, robinhood: 18, arc: 18, sol: 9 };
 /** 买入快捷额（原生币数量）按原生币分组 */
 export type BuyPresets = Record<NativeSymbol, number[]>;
 
@@ -400,7 +408,7 @@ export interface TradeSettings {
   maxUsdPerTrade: number;
   /** 滚动 24h 买入合计上限（USD），≥ maxUsdPerTrade */
   maxUsdPerDay: number;
-  /** 快捷额：买 = 原生币数量，按 ETH / BNB / SOL / MON 分组（每组 1–6 个、>0）；卖 = 持仓百分比整数（1–6 个、1–100） */
+  /** 快捷额：买 = 原生币数量，按 ETH / BNB / SOL / MON / USDC 分组（每组 1–6 个、>0）；卖 = 持仓百分比整数（1–6 个、1–100） */
   presets: { buy: BuyPresets; sell: number[] };
 }
 
@@ -422,8 +430,8 @@ export const DEFAULT_SETTINGS: Settings = {
     rpc: {},
     maxUsdPerTrade: 200,
     maxUsdPerDay: 1000,
-    // 2026-09-11 按当日价凑到 ≈$5 / 25 / 50 / 250（ETH $2469、BNB $716、SOL $100、MON $0.024）
-    presets: { buy: { ETH: [0.002, 0.01, 0.02, 0.1], BNB: [0.007, 0.035, 0.07, 0.35], SOL: [0.05, 0.25, 0.5, 2.5], MON: [200, 1000, 2000, 10000] }, sell: [25, 50, 100] },
+    // 2026-09-11 按当日价凑到 ≈$5 / 25 / 50 / 250（ETH $2469、BNB $716、SOL $100、MON $0.024）；USDC 就是美元
+    presets: { buy: { ETH: [0.002, 0.01, 0.02, 0.1], BNB: [0.007, 0.035, 0.07, 0.35], SOL: [0.05, 0.25, 0.5, 2.5], MON: [200, 1000, 2000, 10000], USDC: [5, 25, 50, 250] }, sell: [25, 50, 100] },
   },
 };
 

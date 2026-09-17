@@ -52,6 +52,8 @@ class FakeOkx {
     const bnbTok = token("BNB", 18, BNB_USD);
     const meme = token("MEME", 9, 0.001);
     if (q.fromToken === NATIVE_BNB) return route(bnbTok, meme, toRaw((fromRaw(q.amountRaw, 18) * BNB_USD) / 0.001, 9));
+    // arc：fromToken 是 USDC 预编译，OKX 口径 6 位、$1
+    if (q.fromToken === NATIVE_TOKEN.arc) return route(token("USDC", 6, 1), meme, toRaw(fromRaw(q.amountRaw, 6) / 0.001, 9));
     return route(meme, bnbTok, toRaw((fromRaw(q.amountRaw, 9) * 0.001) / BNB_USD, 18));
   }
 }
@@ -117,8 +119,8 @@ function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) =
   const events: OutEvent[] = [];
   const okx = new FakeOkx();
   const wallet = new FakeWallet();
-  /** 假原生币价缓存：所有符号同一个价；测试可拨 value / 手动触发 onChange */
-  const prices: NativePrices & { value: number | null } = { value: nativePrice, get: () => prices.value, onChange: null };
+  /** 假原生币价缓存：USDC 恒 1（与真实 feed 一致），其余符号同一个价；测试可拨 value / 手动触发 onChange */
+  const prices: NativePrices & { value: number | null } = { value: nativePrice, get: (s) => (s === "USDC" ? 1 : prices.value), onChange: null };
   /** 假 Keychain 状态：`wallet: false` 起步时没钱包；createWallet 生成一次后 load 就有 */
   let hasWallet = opts.wallet ?? true;
   let created = 0;
@@ -553,6 +555,54 @@ function harness(overrides: Partial<TradeSettings> = {}, seed?: (store: Store) =
   assert.match(st.reason ?? "", /keychain locked/, "失败原因随 trade_state 给到 UI");
   h3.svc.close();
   console.log("ok wallet init: create once → ready with address, never overwrite, failure surfaces in reason");
+}
+
+// ⑪ arc：原生币 USDC 两套口径——余额 / 余额不足比较按 18 位，报 OKX 的 amountRaw / 报价换算按 6 位；买入 fromToken 是 ERC-20 预编译 → 先 approve 再 swap（两笔上链，tx.value=0）
+{
+  const h = harness();
+  h.wallet.native.set("arc", toRaw(20, 18));
+  await h.svc.start();
+  const st = h.svc.state();
+  assert.deepEqual(st.balances.arc, { native: 20, symbol: "USDC", price: 1, usd: 20 }, "arc 余额按 18 位折 USDC，美元价恒 1");
+
+  // 余额不足要按同一口径比：50 USDC（OKX 口径 50e6）对 20 USDC（余额口径 20e18）——若直接比 raw 会误判为够
+  h.svc.quote({ address: MEME, chain: "arc", side: "buy", amount: 50 });
+  await until(() => h.quotes().length === 1);
+  h.svc.trade({ address: MEME, chain: "arc", side: "buy", amount: 50, quoteId: h.quotes()[0].id });
+  const over = h.trades()[0].id;
+  await until(() => h.statuses(over).includes("failed"));
+  const ov = h.trades().find((e) => e.id === over && e.status === "failed")!;
+  assert.equal(ov.error, "余额不足");
+  assert.match(ov.detail ?? "", /需要 50\.00 USDC，钱包有 20\.00/);
+  assert.equal(h.okx.swaps.length, 0, "余额不足在 swap 之前拦住");
+
+  // 报价：amountRaw / 到手换算按 OKX 口径 6 位（执行必须钉住最新一份报价，所以放在余额不足之后）
+  h.svc.quote({ address: MEME, chain: "arc", side: "buy", amount: 5 });
+  await until(() => h.quotes().length === 2);
+  const q = h.quotes()[1];
+  assert.equal(q.ok, true, q.error ?? "");
+  assert.equal(q.usd, 5, "5 USDC 估值 $5");
+  const qr = h.okx.quotes.at(-1)!;
+  assert.equal(qr.chain, "arc");
+  assert.equal(qr.fromToken, "0x3600000000000000000000000000000000000000", "报 OKX 的原生币是 USDC 预编译");
+  assert.equal(qr.amountRaw, 5_000_000n, "amountRaw 按 OKX 口径 6 位，不是余额的 18 位");
+  assert.equal(q.outAmount, 5000, "到手 = 5 USDC ÷ $0.001");
+
+  // 5 USDC：approve（额度 = 本次数量）+ swap 两笔；账本 inRaw 是 6 位口径
+  h.svc.trade({ address: MEME, chain: "arc", side: "buy", amount: 5, quoteId: q.id });
+  const id = h.trades().find((e) => e.id !== over)!.id;
+  await until(() => h.statuses(id).includes("confirmed"));
+  assert.equal(h.okx.approves, 1, "arc 买入先 approve USDC 预编译");
+  assert.ok(h.trades().some((e) => e.id === id && /买入先授权/.test(e.detail ?? "")), "授权阶段文案说明原因");
+  assert.equal(h.wallet.sent.length, 2, "approve + swap 两笔上链");
+  assert.equal(h.wallet.sent[1].value, 0n, "swap 不带 value：USDC 走 transferFrom");
+  const sw = h.okx.swaps[0];
+  assert.equal(sw.fromToken, "0x3600000000000000000000000000000000000000");
+  assert.equal(sw.amountRaw, 5_000_000n);
+  assert.equal(h.store.tradeById(id)!.exec.inRaw, "5000000");
+  assert.equal(h.store.buyUsdSince(0), 5, "日限额按 USDC=$1 计");
+  h.svc.close();
+  console.log("ok arc: balance decimals 18 vs swap decimals 6, insufficient-balance compares in one scale, buy approves USDC precompile then swaps");
 }
 
 console.log("trade: ok");

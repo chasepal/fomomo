@@ -3,7 +3,7 @@ import { requestJson } from "./proxy.js";
 /**
  * 「这个 0x 地址到底是不是 ERC20」的只读三态探测，给行情源（Dex/GMGN）都查不到的地址兜底：
  * - `erc20`：任一支持链上是合约且 `balanceOf/totalSupply/allowance` 都返回合法 uint256 字（全 0 也算合法——刚部署的空币）；
- * - `non-erc20`：五条链上**每条**都拿到了确定的否定（EOA `0x` 代码 / 接口 revert / 返回空或长度不对的字节）；
+ * - `non-erc20`：六条链上**每条**都拿到了确定的否定（EOA `0x` 代码 / 接口 revert / 返回空或长度不对的字节）；
  * - `unknown`：其它一切——网络、限流、节点错误、响应形状不对、chainId 对不上、链不支持、地址不是 EVM。
  * 契约：RPC 挂了绝不能变成 `non-erc20`；只有 `balanceOf` 也不够（NFT 也有），`allowance` 是把 ERC721 挡在门外的那一问。
  * 只发只读 JSON-RPC 到公共节点，不带钱包/密钥，永不签名。
@@ -19,7 +19,7 @@ interface Chain {
 /**
  * 公共节点；slug 与 gmgn 链口径一致（`fomo.ts` NETWORK_TO_CHAIN）。测试注入 rpcBase 时路由到 `${rpcBase}/${slug}`。
  * wallet.ts 广播后靠 `eth_getTransactionReceipt` 等回执 / 对账，节点必须服务这一问：publicnode 的 BSC 免费档把它算「archive」直接 403
- * （2026-09-10 真钱首单撞上：广播成功、等回执 403 → unknown，对账也永远 403），故 BSC 用币安官方 dataseed；其余四条已实测回 null 正常。
+ * （2026-09-10 真钱首单撞上：广播成功、等回执 403 → unknown，对账也永远 403），故 BSC 用币安官方 dataseed；其余五条已实测回 null 正常（arc 2026-09-16）。
  */
 const CHAINS: readonly Chain[] = [
   { slug: "eth", url: "https://ethereum-rpc.publicnode.com", chainId: 1 },
@@ -27,6 +27,7 @@ const CHAINS: readonly Chain[] = [
   { slug: "base", url: "https://mainnet.base.org", chainId: 8453 },
   { slug: "monad", url: "https://rpc.monad.xyz", chainId: 143 },
   { slug: "robinhood", url: "https://rpc.mainnet.chain.robinhood.com", chainId: 4663 },
+  { slug: "arc", url: "https://rpc.mainnet.arc.io", chainId: 5042 },
 ];
 /** 供 wallet.ts 复用同一套公共节点，别再抄一份 */
 export const PUBLIC_RPC = CHAINS;
@@ -58,7 +59,7 @@ let nextId = 1;
 export const Erc20 = {
   /**
    * 先探 `chainHint`（命中即返回，不再问其它链），否则按 CHAINS 顺序逐链探测；hint 只是优先级，不是权威——
-   * 行情源标错链的币在别的链上照样能被认成 ERC20，而否定必须五链全确认。
+   * 行情源标错链的币在别的链上照样能被认成 ERC20，而否定必须六链全确认。
    * 非 EVM 地址、非空但不在支持表里的 hint（sol / 未配置链）→ `unknown`：不假装查过没配置的链。
    */
   async check(address: string, chainHint: string | null = null, rpcBase?: string): Promise<Erc20Verdict> {

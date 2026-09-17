@@ -18,7 +18,7 @@ import {
   TransactionReceiptNotFoundError,
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { base, bsc, mainnet, monad, robinhood } from "viem/chains";
+import { arc, base, bsc, mainnet, monad, robinhood } from "viem/chains";
 import { PUBLIC_RPC } from "./erc20.js";
 import type { EvmTx, TradeChain } from "./okx.js";
 import { requestJson } from "./proxy.js";
@@ -96,12 +96,12 @@ const publicRpc = (slug: EvmChain): string => {
 };
 
 export const DEFAULT_RPC: { evm: Record<EvmChain, string>; sol: string } = {
-  evm: { eth: publicRpc("eth"), bsc: publicRpc("bsc"), base: publicRpc("base"), monad: publicRpc("monad"), robinhood: publicRpc("robinhood") },
+  evm: { eth: publicRpc("eth"), bsc: publicRpc("bsc"), base: publicRpc("base"), monad: publicRpc("monad"), robinhood: publicRpc("robinhood"), arc: publicRpc("arc") },
   sol: "https://api.mainnet-beta.solana.com",
 };
 
-/** viem 2.56 内置全部五条链（monad 143 / robinhood 4663 都在 viem/chains） */
-const VIEM_CHAIN: Record<EvmChain, ViemChain> = { eth: mainnet, bsc, base, monad, robinhood };
+/** viem 2.56 内置全部六条链（monad 143 / robinhood 4663 / arc 5042 都在 viem/chains；arc 默认 rpc 为空，我们本来就自带 transport） */
+const VIEM_CHAIN: Record<EvmChain, ViemChain> = { eth: mainnet, bsc, base, monad, robinhood, arc };
 
 /** sendSol / 余额查询只用到的这几个方法；`Connection` 结构上满足，测试可注入假实现 */
 export interface SolConnection {

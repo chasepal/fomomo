@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { HttpRequestError, RpcRequestError, parseEventLogs, erc20Abi, type Log } from "viem";
 import type { NativePrices } from "./native-price.js";
-import { NATIVE_TOKEN, OkxError, TRADE_CHAINS, type OkxClient, type RouteInfo } from "./okx.js";
+import { EVM_NATIVE, NATIVE_SWAP_DECIMALS, NATIVE_TOKEN, OkxError, TRADE_CHAINS, type OkxClient, type RouteInfo } from "./okx.js";
 import type { Store, StoredTrade, TradeExec } from "./store.js";
-import { NATIVE_SYMBOL, type OutEvent, type TradeChain, type TradeEvent, type TradeHolding, type TradePosition, type TradeQuoteEvent, type TradeSettings, type TradeStateEvent } from "./types.js";
+import { NATIVE_BALANCE_DECIMALS, NATIVE_SYMBOL, type OutEvent, type TradeChain, type TradeEvent, type TradeHolding, type TradePosition, type TradeQuoteEvent, type TradeSettings, type TradeStateEvent } from "./types.js";
 import { SolTxError, type BurnerWallet, type EvmChain } from "./wallet.js";
 
 /**
@@ -16,7 +16,7 @@ import { SolTxError, type BurnerWallet, type EvmChain } from "./wallet.js";
  *   sell（EVM）先查 allowance，不够就先发一笔 approve（额度 = 卖出量，不无限授权）。
  * 生命周期：validating → submitting → submitted（有 hash）→ confirmed | failed；等回执超时 → unknown，对账循环轮询 receipt 改终态，30 分钟仍无回执按 failed（未上链）。
  *   绝不自动重发；同地址有未落定记录时拒绝新意图；quoteId 消费一次；quick trade 同 id 重放只回放。
- * 余额/持仓：原生币六链余额 + 账本里 confirmed 过的币（∪ 焦点币）的链上余额，60s 一轮 + 成交后 0/2/4s 补读；持仓只跟我们自己买过的币（外部转入的不出现）。
+ * 余额/持仓：原生币七链余额 + 账本里 confirmed 过的币（∪ 焦点币）的链上余额，60s 一轮 + 成交后 0/2/4s 补读；持仓只跟我们自己买过的币（外部转入的不出现）。
  * 限额：单笔 / 滚动 24h 买入合计（设置）；卖出不计。
  * 私钥、OKX secret 永不进这里的日志 / 事件（wallet.ts 只暴露地址与签名/发送）。
  */
@@ -46,14 +46,13 @@ interface Timing {
   receiptMs: number;
   reconcileEveryMs: number;
   reconcileGiveUpMs: number;
-  /** 六链原生币 + 账本币全量扫一遍的间隔（兜底） */
+  /** 七链原生币 + 账本币全量扫一遍的间隔（兜底） */
   balancesEveryMs: number;
   /** 弹卡开着时，焦点币所在链的原生币 + 该币余额的刷新间隔（用户要「一秒一次」；只打一条链的节点，2 次/秒） */
   focusEveryMs: number;
 }
 const DEFAULT_TIMING: Timing = { receiptMs: 90_000, reconcileEveryMs: 15_000, reconcileGiveUpMs: 30 * 60_000, balancesEveryMs: 60_000, focusEveryMs: 1_000 };
 
-const NATIVE_DECIMALS: Record<TradeChain, number> = { eth: 18, bsc: 18, base: 18, monad: 18, robinhood: 18, sol: 9 };
 /** 本地最低额（USD）：更小的金额 gas 都不够 */
 export const MIN_USD = 1;
 const PRICE_IMPACT_PROTECTION = 50;
@@ -204,7 +203,7 @@ export class TradeService {
     const balances = {} as TradeStateEvent["balances"];
     for (const c of TRADE_CHAINS) {
       const raw = this.nativeBalances.get(c);
-      const native = raw === undefined ? 0 : fromRaw(raw, NATIVE_DECIMALS[c]);
+      const native = raw === undefined ? 0 : fromRaw(raw, NATIVE_BALANCE_DECIMALS[c]);
       const price = this.nativePrice(c);
       balances[c] = { native, symbol: NATIVE_SYMBOL[c], price, usd: price === null ? null : native * price };
     }
@@ -322,7 +321,7 @@ export class TradeService {
     }
   }
 
-  /** 六链原生币 + 账本币（∪ 焦点币）余额；任一变了推 state / holdings；单链失败只记日志 */
+  /** 七链原生币 + 账本币（∪ 焦点币）余额；任一变了推 state / holdings；单链失败只记日志 */
   async refreshBalances(): Promise<void> {
     const w = this.wallet;
     if (!w || this.closed) return;
@@ -414,10 +413,10 @@ export class TradeService {
       const r = await this.okx!.quote({ chain, fromToken: plan.fromToken, toToken: plan.toToken, amountRaw: plan.amountRaw, priceImpactProtectionPercent: PRICE_IMPACT_PROTECTION });
       this.rememberMeta(w.address, chain, r, w.side);
       const token = w.side === "buy" ? r.toToken : r.fromToken;
-      // 精度以 OKX 响应为准（买入前本地可能还没读过这个币）
+      // 精度以 OKX 响应为准（买入前本地可能还没读过这个币）；原生币这边按 OKX 数量口径（arc 是 6，不是余额的 18）
       const tokenDecimals = token.decimals;
-      const inDec = w.side === "buy" ? NATIVE_DECIMALS[chain] : tokenDecimals;
-      const outDec = w.side === "buy" ? tokenDecimals : NATIVE_DECIMALS[chain];
+      const inDec = w.side === "buy" ? NATIVE_SWAP_DECIMALS[chain] : tokenDecimals;
+      const outDec = w.side === "buy" ? tokenDecimals : NATIVE_SWAP_DECIMALS[chain];
       const inAmount = fromRaw(plan.amountRaw, inDec);
       const outAmount = fromRaw(r.toTokenAmount, outDec);
       // 到手估值：buy = 代币数量 ×（OKX 给的价，退引擎现价）；sell = 原生币数量 ×（缓存价，退 OKX 给的价）
@@ -462,16 +461,16 @@ export class TradeService {
       .finally(() => this.gasPriceBusy.delete(chain));
   }
 
-  /** OKX 的 estimateGasFee 是 gas 数（实测 BSC 报 490616），EVM 要乘节点 gasPrice（只读缓存，没缓存 → null，同时后台去拉，下一次报价就有）；Solana 给的是 lamports */
+  /** OKX 的 estimateGasFee 是 gas 数（实测 BSC 报 490616），EVM 要乘节点 gasPrice（只读缓存，没缓存 → null，同时后台去拉，下一次报价就有）；Solana 给的是 lamports。gas 费按余额口径折原生币 */
   private networkFeeUsd(chain: TradeChain, gas: bigint | null, nativePrice: number | null): number | null {
     if (gas === null || nativePrice === null || !this.wallet) return null;
-    if (chain === "sol") return fromRaw(gas, 9) * nativePrice;
+    if (chain === "sol") return fromRaw(gas, NATIVE_BALANCE_DECIMALS.sol) * nativePrice;
     const gp = this.gasPrices.get(chain);
     if (!gp) {
       this.refreshGasPrice(chain);
       return null;
     }
-    return fromRaw(gas * gp.wei, 18) * nativePrice;
+    return fromRaw(gas * gp.wei, NATIVE_BALANCE_DECIMALS[chain]) * nativePrice;
   }
 
   private rememberMeta(address: string, chain: TradeChain, r: RouteInfo, side: "buy" | "sell"): void {
@@ -485,14 +484,14 @@ export class TradeService {
   }
 
   /**
-   * 把意图折成最小单位数量：buy = 原生币数量直接换最小单位；sell = 现读的持仓 × pct。
+   * 把意图折成最小单位数量：buy = 原生币数量按 OKX 数量口径换最小单位（arc 是 6 位，见 NATIVE_SWAP_DECIMALS）；sell = 现读的持仓 × pct。
    * sell 每次都现读链上余额（卖的是真实数量，不能用旧读数）。
    */
   private async plan(address: string, chain: TradeChain, side: "buy" | "sell", amount: number, pct: number | null): Promise<QuotePlan> {
     const native = NATIVE_TOKEN[chain];
     if (side === "buy") {
       const p = this.positions.get(key(address, chain));
-      return { chain, side, amountRaw: toRaw(amount, NATIVE_DECIMALS[chain]), fromToken: native, toToken: address, tokenDecimals: p?.decimals ?? 18, tokenSymbol: p?.symbol ?? null };
+      return { chain, side, amountRaw: toRaw(amount, NATIVE_SWAP_DECIMALS[chain]), fromToken: native, toToken: address, tokenDecimals: p?.decimals ?? 18, tokenSymbol: p?.symbol ?? null };
     }
     if (pct === null) throw new Error("卖出按持仓百分比");
     await this.readPosition(address, chain);
@@ -638,7 +637,7 @@ export class TradeService {
   }
 
   /**
-   * 真正花钱的路径：余额校验 → （sell 先 approve）→ OKX swap → 本地模拟/签名/广播 → 等回执。
+   * 真正花钱的路径：余额校验 → （fromToken 是 ERC-20 时先 approve：所有 sell，以及 arc 的 buy）→ OKX swap → 本地模拟/签名/广播 → 等回执。
    * 任何在拿到 hash 之前的失败 = failed（确定没交易）；拿到 hash 之后超时 = unknown（对账）。
    */
   private async runTrade(base: TradeEvent, plan: QuotePlan, quoteId: string): Promise<void> {
@@ -653,11 +652,13 @@ export class TradeService {
     const fail = (error: string, detail: string | null = null) => set({ status: "failed", error, detail });
     try {
       if (plan.side === "buy") {
+        // 余额是余额口径（arc 18），amountRaw 是 OKX 数量口径（arc 6）：比较前把 amountRaw 换到余额口径
         const bal = this.nativeBalances.get(chain) ?? (await w.nativeBalance(chain));
-        if (bal < plan.amountRaw) return fail("余额不足", `需要 ${fromRaw(plan.amountRaw, NATIVE_DECIMALS[chain]).toPrecision(4)} ${NATIVE_SYMBOL[chain]}，钱包有 ${fromRaw(bal, NATIVE_DECIMALS[chain]).toPrecision(4)}`);
+        const needRaw = plan.amountRaw * 10n ** BigInt(NATIVE_BALANCE_DECIMALS[chain] - NATIVE_SWAP_DECIMALS[chain]);
+        if (bal < needRaw) return fail("余额不足", `需要 ${fromRaw(needRaw, NATIVE_BALANCE_DECIMALS[chain]).toPrecision(4)} ${NATIVE_SYMBOL[chain]}，钱包有 ${fromRaw(bal, NATIVE_BALANCE_DECIMALS[chain]).toPrecision(4)}`);
       }
       set({ status: "submitting", detail: null }, { inRaw: plan.amountRaw.toString(), decimals: plan.tokenDecimals, symbol: plan.tokenSymbol });
-      if (plan.side === "sell" && chain !== "sol") await this.ensureAllowance(w, okx, chain, plan, set);
+      if (chain !== "sol" && plan.fromToken !== EVM_NATIVE) await this.ensureAllowance(w, okx, chain, plan, set);
       const userWalletAddress = chain === "sol" ? w.solAddress : w.evmAddress;
       const swap = await okx.swap({ chain, fromToken: plan.fromToken, toToken: plan.toToken, amountRaw: plan.amountRaw, userWalletAddress, priceImpactProtectionPercent: PRICE_IMPACT_PROTECTION });
       const token = plan.side === "buy" ? swap.route.toToken : swap.route.fromToken;
@@ -682,7 +683,7 @@ export class TradeService {
     }
   }
 
-  /** sell（EVM）：allowance 不够就先发一笔 approve（额度 = 卖出量），等它上链再 swap */
+  /** EVM 上 fromToken 是 ERC-20（sell 的代币；arc buy 的 USDC 预编译）：allowance 不够就先发一笔 approve（额度 = 本次数量），等它上链再 swap */
   private async ensureAllowance(w: BurnerWallet, okx: OkxClient, chain: EvmChain, plan: QuotePlan, set: (patch: Partial<TradeEvent>) => void): Promise<void> {
     let spender = this.approveSpender.get(chain);
     if (!spender) {
@@ -693,7 +694,7 @@ export class TradeService {
     }
     const allowance = await w.erc20Allowance(chain, plan.fromToken, spender);
     if (allowance >= plan.amountRaw) return;
-    set({ detail: "授权中…" });
+    set({ detail: plan.side === "buy" ? `${chain} 上 ${NATIVE_SYMBOL[chain]} 是 ERC-20 口径，买入先授权…` : "授权中…" });
     const a = await okx.approveTransaction(chain, plan.fromToken, plan.amountRaw);
     const gasPrice = a.gasPrice ?? (await w.gasPrice(chain));
     const receipt = await this.withTimeout(w.sendEvm(chain, { to: a.to, data: a.data, value: 0n, gas: a.gasLimit ?? 100_000n, gasPrice, maxPriorityFeePerGas: null }), this.timing.receiptMs);

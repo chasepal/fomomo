@@ -56,6 +56,7 @@ struct ChainBadge: View {
         case "base": Color(hex: 0x3b82f6)
         case "sol": Color(hex: 0xc792ff)
         case "robinhood": Color(hex: 0x9fc700)
+        case "arc": Color(hex: 0x2f7cff)
         case "?": FM.faint
         default: FM.muted
         }
