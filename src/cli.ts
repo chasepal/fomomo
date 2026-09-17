@@ -191,7 +191,6 @@ async function main() {
     await tradeConfig(flags, flags.db);
     return;
   }
-
   console.error(`未知命令: ${cmd}（试试 pnpm cli help）`);
   process.exit(2);
 }
