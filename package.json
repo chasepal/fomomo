@@ -1,6 +1,6 @@
 {
   "name": "fomomo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "本地读取微信指定群组消息（macOS）。密钥由 wcdb-key-tool 一次性提取，查询与解密全部在 TS 内完成。",
